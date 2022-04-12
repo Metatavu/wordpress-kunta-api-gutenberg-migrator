@@ -1,7 +1,52 @@
 declare const wp: any;
-declare const jQuery: any;
+declare const settings: { 
+  nonce: string;
+  ajaxUrl: string;
+};
 
-(($: any) => {
+/**
+ * Post type
+ */
+type ItemType = "page" | "post";
+
+/**
+ * Interface for single item
+ */
+interface Item {
+  id: number;
+  type: ItemType;
+}
+
+/**
+ * Interface for Wordpress post (or similar object, e.g. page)
+ */
+interface PostLike {
+  content: {
+    raw: string;
+  };
+}
+
+/**
+ * Main function
+ */
+(($: JQueryStatic) => {
+
+  let checkedItems: Item[] = [];
+
+  /**
+   * Updates the checkedIds array with the ids of the checked checkboxes.
+   */
+  const updateSelected = () => {
+    checkedItems = $('.kunta-api-migrate:checked').map((_index, element) => {
+      return JSON.parse($(element).val() as string) as Item;
+    }).get();
+
+    if (checkedItems.length) {
+      $('#kunta-api-guttenberg-migrator-migrate-button').removeAttr('disabled');
+    } else {
+      $('#kunta-api-guttenberg-migrator-migrate-button').attr('disabled', 'disabled');
+    }
+  };
  
   /**
    * Converts html to Gutenberg blocks
@@ -10,11 +55,9 @@ declare const jQuery: any;
    * @returns Gutenberg blocks
    */
   const convertToBlocks = (html: string) => {
-    var blocks = wp.blocks.rawHandler({ 
+    return wp.blocks.rawHandler({ 
 			HTML: html
 		});
-
-    return blocks;
   };
 
   /**
@@ -79,6 +122,127 @@ declare const jQuery: any;
     return wp.blocks.serialize(migratedBlocks);
   };
 
+  /**
+   * Downloads page from Wordpress API
+   * 
+   * @param id page id
+   * @returns page
+   */
+  const getPage = async (id: number): Promise<PostLike> => {
+    return new Promise((resolve, reject) => {
+      $.ajax({
+        method: "GET",
+        beforeSend: ( xhr ) => {
+          xhr.setRequestHeader('X-WP-Nonce', settings.nonce);
+        },
+        url: `/wp-json/wp/v2/pages/${id}?context=edit`
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+  };
+
+  /**
+   * Downloads post from Wordpress API
+   * 
+   * @param id post id
+   * @returns post
+   */
+  const getPost = async (id: number): Promise<PostLike> => {
+    return new Promise((resolve, reject) => {
+      $.ajax({
+        method: "GET",
+        beforeSend: ( xhr ) => {
+          xhr.setRequestHeader('X-WP-Nonce', settings.nonce);
+        },
+        url: `/wp-json/wp/v2/posts/${id}?context=edit`
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+  };
+
+  /**
+   * Downloads item data
+   * 
+   * @param item item
+   * @returns item data
+   */
+  const getItemData = async (item: Item) => {
+    switch (item.type) {
+      case "page":
+        return (await getPage(item.id)).content.raw;
+      case "post":
+        return (await getPost(item.id)).content.raw;
+      default:
+        throw Error(`Unknown item type: ${item.type}`);
+    }
+  };
+
+  /**
+   * Updates migrated item back to Wordpress
+   * 
+   * @param item item
+   * @param migratedHtml migrated html
+   */
+  const updateItem = async (item: Item, migratedHtml: string) => {
+    return new Promise((resolve, reject) => {
+      const { ajaxUrl, nonce } = settings;
+
+      $.ajax({
+        method: "POST",
+        url: ajaxUrl,
+        data: { 
+          action : "kunta_api_guttenberg_migrator_migrate_item", 
+          _wpnonce : nonce, 
+          item: JSON.stringify(item),
+          migratedHtml: migratedHtml 
+        }
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+  };
+
+  /**
+   * Scans the database for items that need to be migrated.
+   */
+  const scanItems = async () => {
+    return new Promise((resolve, reject) => {
+      const { ajaxUrl, nonce } = settings;
+
+      $.ajax({
+        method: "POST",
+        url: ajaxUrl,
+        data: { 
+          action : "kunta_api_guttenberg_migrator_scan_items", 
+          _wpnonce : nonce
+        }
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+  };
+
+  /**
+   * Migrates single item
+   * 
+   * @param item item to be migrated
+   */
+  const migrateItem = async (item: Item) => {
+    const itemData = await getItemData(item);
+    console.log({
+      itemData
+    });
+
+    const migratedHtml = migrateHtml(itemData);
+    console.log({
+      migratedHtml
+    });
+
+    await updateItem(item, migratedHtml);
+  };
+
   wp.domReady(() => {
     $('<div />')
       .attr('id', 'kunta-api-guttenberg-migrator-editor')
@@ -86,8 +250,22 @@ declare const jQuery: any;
       .prependTo(document.body);
 
     wp.editPost.initializeEditor('kunta-api-guttenberg-migrator-editor', null, null, { defaultEditorStyles: [ ] }, {});
-
-    console.log(migrateHtml("<article data-type=\"article\" data-component=\"article\" data-service-id=\"1\"><h1>Hello</h1></article>"));
+    updateSelected();
   });
 
-})( jQuery );
+  $('.kunta-api-migrate').on("change", () => {
+    updateSelected();
+  });
+
+  $('#kunta-api-guttenberg-migrator-migrate-button').on("click", async () => {
+    console.log({  checkedItems });
+    const posts = await Promise.all(checkedItems.map(migrateItem));
+    window.location.reload();
+  });
+
+  $('#kunta-api-guttenberg-migrator-scan-button').on("click", async () => {
+    await scanItems();
+    window.location.reload();
+  });
+
+})(jQuery);

@@ -29,8 +29,12 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
    * @return string convert column contents
    */
 	public function column_convert($item) {
-		$post_id = absint($item['ID']);
-		return sprintf('<input type="checkbox" name="kunta-api-migrate[]" value="%s" />', $post_id);
+		$item_json = json_encode([
+      'id' => absint($item['ID']),
+      'type' => $item['type']
+    ]);
+
+		return sprintf('<input type="checkbox" class="kunta-api-migrate" value="%s" />', htmlspecialchars($item_json));
 	}
 
   /**
@@ -85,13 +89,15 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
    */
 	public function get_posts($page_number) {
     $posts_array = get_posts([
-      'post_type' => 'any',
+      'post_type' => 'page', // TODO: add support for other post types
       'post_status' => 'any',
       'posts_per_page' => $this->get_posts_per_page(),
       'paged' => $page_number,
       'orderby' => $_REQUEST['orderby'],
       'order' => $_REQUEST['order'],
-      's' => $_REQUEST['s']
+      's' => $_REQUEST['s'],
+			'meta_key' => 'kunta_api_guttenberg_migrator_status',
+			'meta_value' => 'not_migrated'
     ]);
 
 		$results = array();
@@ -113,10 +119,12 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
    */
 	public function count_items() {
 		$posts_query = new WP_Query([
-      'post_type' => 'any',
+      'post_type' => 'page', // TODO: add support for other post types
       'post_status' => 'any',
       'posts_per_page' => -1,
-      's' => $_REQUEST['s']
+      's' => $_REQUEST['s'],
+			'meta_key' => 'kunta_api_guttenberg_migrator_status',
+			'meta_value' => 'not_migrated'
     ]);
 
 		return $posts_query->post_count;
@@ -147,7 +155,7 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
    * @return int Number of posts per page
    */
   private function get_posts_per_page() {
-    return 20;
+    return 5;
   }
 
 }
