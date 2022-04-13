@@ -60,6 +60,74 @@ interface PostLike {
 		});
   };
 
+  const migrateServiceLocationComponent = (element: JQuery, componentName: string, serviceLocationId: string) => {
+    element.attr("id", serviceLocationId);
+    switch(componentName) {
+      case "description":
+        element.attr("component", "description");
+      case "addresses":
+        element.attr("component", "addresses");
+      case "email":
+        element.attr("component", "email");
+      case "fax":
+        throw Error("NOT SUPPORTED!!!");
+      case "phone-charge-info":
+          throw Error("NOT SUPPORTED!!!");
+      case "name":
+        element.attr("component", "name");
+      case "phone":
+        element.attr("component", "phone-numbers");
+      case "servicehours":
+        element.attr("component", "service-hours");
+      case "webpages":
+        element.attr("component", "webpage");
+      default:
+        throw Error("NOT SUPPORTED!!!");
+    }
+  }
+
+  const migrateServiceComponent = (element: JQuery, componentName: string, serviceId: string) => {
+    element.attr("id", serviceId);
+    switch(componentName) {
+      case "description":
+        element.attr("component", "description");
+      case "userInstruction":
+        element.attr("component", "user-instruction");
+      case "languages":
+        throw Error("NOT SUPPORTED!!!");
+      case "electronicServiceChannelIds":
+        element.attr("component", "electronic-service-list");
+      case "phoneServiceChannelIds":
+        element.attr("component", "phone-service-list");
+      case "printableFormServiceChannelIds":
+        element.attr("component", "printable-service-list");
+      case "serviceLocationServiceChannelIds":
+        element.attr("component", "service-location-list");
+      case "webPageServiceChannelIds":
+        element.attr("component", "webpage-service-list");
+      default:
+        throw Error("NOT SUPPORTED!!!");
+    }
+  }
+
+  const migrateComponent = (element: JQuery) => {
+
+    const type = element.attr("data-type");
+    const componentName = element.attr("data-component");
+    const serviceId = element.attr("data-service-id");
+    const serviceLocationId = element.attr("data-service-channel-id")
+
+    element.attr("language", "fi");
+    switch (type) {
+      case "kunta-api-service-location-component":
+        migrateServiceLocationComponent(element, componentName, serviceLocationId);
+      case "kunta-api-service-component":
+        migrateServiceComponent(element, componentName, serviceId);
+      default:
+        throw Error("NOT SUPPORTED!!!");
+    }
+  }
+
   /**
    * Migrate block 
    * 
@@ -72,9 +140,8 @@ interface PostLike {
 
     switch (tag) {
       case "ARTICLE":
-        const type = element.attr("data-type");
-        const component = element.attr("data-component");
-        const serviceId = element.attr("data-service-id");
+
+        migrateComponent(element);
 
         console.log({
           tag,
