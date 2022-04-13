@@ -110,7 +110,7 @@ interface PostLike {
     }
   }
 
-  const migrateComponent = (element: JQuery) => {
+  const migrateComponent = (element: JQuery, block: any) => {
 
     const type = element.attr("data-type");
     const componentName = element.attr("data-component");
@@ -121,8 +121,10 @@ interface PostLike {
     switch (type) {
       case "kunta-api-service-location-component":
         migrateServiceLocationComponent(element, componentName, serviceLocationId);
+        block.name = "sptv/service-location-service-channel-block";
       case "kunta-api-service-component":
         migrateServiceComponent(element, componentName, serviceId);
+        block.name = "sptv/service-block";
       default:
         throw Error("NOT SUPPORTED!!!");
     }
@@ -137,17 +139,12 @@ interface PostLike {
   const migrateBlock = (block: any): any => {
     const element = $(block.attributes.content);
     const tag = element.prop("tagName");
-
     switch (tag) {
       case "ARTICLE":
-
-        migrateComponent(element);
+        migrateComponent(element, block);
 
         console.log({
-          tag,
-          type,
-          component,
-          serviceId
+          tag
         });
       break;
       case "ASIDE":
