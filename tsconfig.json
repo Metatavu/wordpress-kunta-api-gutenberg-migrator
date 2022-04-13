@@ -1,16 +1,24 @@
 {
   "compilerOptions": {
-      "module": "commonjs",
+      "module": "esnext",
       "esModuleInterop": true,
-      "target": "es6",
+      "target": "ES5",
       "noImplicitAny": true,
-      "moduleResolution": "node",
+      "moduleResolution": "Node",
       "sourceMap": true,
       "outDir": "js",
       "baseUrl": ".",
-      "resolveJsonModule": true
-  },
-  "include": [
-      "ts/**/*"
-  ]
+      "rootDir": "ts",
+      "resolveJsonModule": true,
+      "forceConsistentCasingInFileNames": true,
+      "noImplicitReturns": true,
+      "noImplicitThis": true,
+      "strictNullChecks": true,
+      "suppressImplicitAnyIndexErrors": true,
+      "lib": [
+        "ES6",
+        "DOM",
+        "ES2017"
+      ]
+  }
 }

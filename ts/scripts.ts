@@ -1,3 +1,5 @@
+import ids from "./id";
+
 declare const wp: any;
 declare const settings: { 
   nonce: string;
@@ -60,71 +62,86 @@ interface PostLike {
 		});
   };
 
-  const migrateServiceLocationComponent = (element: JQuery, componentName: string, serviceLocationId: string) => {
-    element.attr("id", serviceLocationId);
+  const migrateServiceLocationComponent = (componentName: string) => {
+
     switch(componentName) {
       case "description":
-        element.attr("component", "description");
+        return "description";
       case "addresses":
-        element.attr("component", "addresses");
+        return "addresses";
       case "email":
-        element.attr("component", "email");
+        return "email";
       case "fax":
         throw Error("NOT SUPPORTED!!!");
       case "phone-charge-info":
           throw Error("NOT SUPPORTED!!!");
       case "name":
-        element.attr("component", "name");
+        return "name";
       case "phone":
-        element.attr("component", "phone-numbers");
+        return "phone-numbers";
       case "servicehours":
-        element.attr("component", "service-hours");
+        return "service-hours";
       case "webpages":
-        element.attr("component", "webpage");
+        return "webpage";
       default:
-        throw Error("NOT SUPPORTED!!!");
+        throw Error(componentName);
     }
   }
 
-  const migrateServiceComponent = (element: JQuery, componentName: string, serviceId: string) => {
-    element.attr("id", serviceId);
+  const migrateServiceComponent = (componentName: string) => {
     switch(componentName) {
       case "description":
-        element.attr("component", "description");
+        return "description";
       case "userInstruction":
-        element.attr("component", "user-instruction");
+        return "user-insturction";
       case "languages":
         throw Error("NOT SUPPORTED!!!");
       case "electronicServiceChannelIds":
-        element.attr("component", "electronic-service-list");
+        return "electronic-service-list";
       case "phoneServiceChannelIds":
-        element.attr("component", "phone-service-list");
+        return "phone-service-list";
       case "printableFormServiceChannelIds":
-        element.attr("component", "printable-service-list");
+        return "printable-service-list";
       case "serviceLocationServiceChannelIds":
-        element.attr("component", "service-location-list");
+        return "service-location-list";
       case "webPageServiceChannelIds":
-        element.attr("component", "webpage-service-list");
+        return "webpage-service-list";
       default:
         throw Error("NOT SUPPORTED!!!");
     }
   }
 
-  const migrateComponent = (element: JQuery, block: any) => {
-
+  const migrateComponent = (element: JQuery) => { 
     const type = element.attr("data-type");
     const componentName = element.attr("data-component");
-    const serviceId = element.attr("data-service-id");
-    const serviceLocationId = element.attr("data-service-channel-id")
-
-    element.attr("language", "fi");
+    element.remove();
+    if (!componentName) {
+      throw Error("");
+    }
     switch (type) {
       case "kunta-api-service-location-component":
-        migrateServiceLocationComponent(element, componentName, serviceLocationId);
-        block.name = "sptv/service-location-service-channel-block";
+        const serviceLocationIdAttr = element.attr("data-service-channel-id");
+        if (!serviceLocationIdAttr) {
+          throw Error("Empty attribute!");
+        }
+
+        const serviceLocationId = ids[serviceLocationIdAttr];
+        if (!serviceLocationId) {
+          throw Error("Id not found!");
+        }
+        const newLocationComponentName = migrateServiceLocationComponent(componentName);
+        return `<!-- wp:sptv/service-location-service-channel-block {"id":"${serviceLocationId}","component":"${newLocationComponentName}","language":"fi"} /-->`;
       case "kunta-api-service-component":
-        migrateServiceComponent(element, componentName, serviceId);
-        block.name = "sptv/service-block";
+        const serviceIdAttr = element.attr("data-service-id");
+        if (!serviceIdAttr) {
+          throw Error("Empty attribute!");
+        }
+        const serviceId = ids[serviceIdAttr];
+        if (!serviceId) {
+          throw Error("Id not found!");
+        }
+        const newComponentName = migrateServiceComponent(componentName);
+        return `<!-- wp:sptv/service-block {"id":"${serviceId}","component":"${newComponentName}","language":"fi"} /-->`;
       default:
         throw Error("NOT SUPPORTED!!!");
     }
@@ -138,15 +155,11 @@ interface PostLike {
    */
   const migrateBlock = (block: any): any => {
     const element = $(block.attributes.content);
+
     const tag = element.prop("tagName");
     switch (tag) {
       case "ARTICLE":
-        migrateComponent(element, block);
-
-        console.log({
-          tag
-        });
-      break;
+        return migrateComponent(element);
       case "ASIDE":
         console.log({
           tag,
@@ -155,7 +168,7 @@ interface PostLike {
       break;
     }
 
-    return block;
+    throw Error("Unhandled block!!!");
   };
 
   /**
@@ -165,13 +178,16 @@ interface PostLike {
    * @returns migrated blocks
    */
   const migrateBlocks = (blocks: any[]) => {
-    return blocks.map(block => {
+    let html = "";
+    blocks.forEach(block => {
       if (block.name == "core/html") {
-        return migrateBlock(block);
+        html+= migrateBlock(block);
+      } else {
+        html +=wp.blocks.serialize(block);
       }
-
-      return block;
     });
+
+    return html;
   };
 
   /**
@@ -183,7 +199,8 @@ interface PostLike {
   const migrateHtml = (html: string): string => {
     const rawBlocks = convertToBlocks(html);
     const migratedBlocks = migrateBlocks(rawBlocks);
-    return wp.blocks.serialize(migratedBlocks);
+    console.log(migratedBlocks);
+    return migratedBlocks;
   };
 
   /**

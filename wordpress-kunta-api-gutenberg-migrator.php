@@ -15,7 +15,6 @@ defined ( 'ABSPATH' ) || die ( 'No script kiddies please!' );
 if (!defined('KUNTA_API_GUTENBERG_MIGRATOR_I18N_DOMAIN')) {
   define('KUNTA_API_GUTENBERG_MIGRATOR_I18N_DOMAIN', 'kunta_api_guttenberg_migrator');
 }
-
 include_once 'unconverted-posts-table.php';
 
 add_action('plugins_loaded', function () {
@@ -59,7 +58,7 @@ add_action('plugins_loaded', function () {
     die(json_encode(["success" => $item['id']]));
   });
 
-  wp_register_script('kunta-api-guttenberg-migrator-script', plugin_dir_url( __FILE__ ) . 'js/scripts.js', [ 'jquery', 'wp-blocks', 'wp-edit-post', 'wp-api' ], false, true);
+  wp_register_script('kunta-api-guttenberg-migrator-script', plugin_dir_url( __FILE__ ) . 'dist/bundle.js', [ 'jquery', 'wp-blocks', 'wp-edit-post', 'wp-api' ], false, true);
   wp_localize_script('kunta-api-guttenberg-migrator-script', 'settings', [
     'nonce' => wp_create_nonce( 'wp_rest' ),
 		'ajaxUrl' => admin_url( 'admin-ajax.php' )
