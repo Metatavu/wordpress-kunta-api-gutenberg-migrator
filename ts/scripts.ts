@@ -1,5 +1,3 @@
-import ids from "./id";
-
 declare const wp: any;
 declare const settings: { 
   nonce: string;
@@ -34,6 +32,7 @@ interface PostLike {
 (($: JQueryStatic) => {
 
   let checkedItems: Item[] = [];
+  let ids: any = {};
 
   /**
    * Updates the checkedIds array with the ids of the checked checkboxes.
@@ -65,6 +64,8 @@ interface PostLike {
   const migrateServiceLocationComponent = (componentName: string) => {
 
     switch(componentName) {
+      case "accessibility":
+        throw Error("NOT SUPPORTED!!!");
       case "description":
         return "description";
       case "addresses":
@@ -93,7 +94,7 @@ interface PostLike {
       case "description":
         return "description";
       case "userInstruction":
-        return "user-insturction";
+        return "user-instruction";
       case "languages":
         throw Error("NOT SUPPORTED!!!");
       case "electronicServiceChannelIds":
@@ -101,7 +102,7 @@ interface PostLike {
       case "phoneServiceChannelIds":
         return "phone-service-list";
       case "printableFormServiceChannelIds":
-        return "printable-service-list";
+        return "printable-form-list";
       case "serviceLocationServiceChannelIds":
         return "service-location-list";
       case "webPageServiceChannelIds":
@@ -126,7 +127,7 @@ interface PostLike {
         }
 
         const serviceLocationId = ids[serviceLocationIdAttr];
-        if (!serviceLocationId) {
+        if (!serviceLocationId) { 
           throw Error("Id not found!");
         }
         const newLocationComponentName = migrateServiceLocationComponent(componentName);
@@ -306,6 +307,26 @@ interface PostLike {
   };
 
   /**
+   * Scans the database for items that need to be migrated.
+   */
+  const loadIdMap = async () => {
+      return new Promise((resolve, reject) => {
+        const { ajaxUrl, nonce } = settings;
+  
+        $.ajax({
+          method: "POST",
+          url: ajaxUrl,
+          data: { 
+            action : "kunta_api_guttenberg_migrator_load_id_map", 
+            _wpnonce : nonce
+          }
+        })
+        .done(resolve)
+        .fail(reject);
+      });
+   };
+
+  /**
    * Migrates single item
    * 
    * @param item item to be migrated
@@ -324,12 +345,14 @@ interface PostLike {
     await updateItem(item, migratedHtml);
   };
 
-  wp.domReady(() => {
+  wp.domReady(async () => {
     $('<div />')
       .attr('id', 'kunta-api-guttenberg-migrator-editor')
       .attr('style', 'display: block')
       .prependTo(document.body);
 
+    ids = await loadIdMap();
+    ids = JSON.parse(ids);
     wp.editPost.initializeEditor('kunta-api-guttenberg-migrator-editor', null, null, { defaultEditorStyles: [ ] }, {});
     updateSelected();
   });
