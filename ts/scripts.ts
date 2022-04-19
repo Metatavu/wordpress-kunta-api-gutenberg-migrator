@@ -65,17 +65,13 @@ interface PostLike {
 
     switch(componentName) {
       case "accessibility":
-        throw Error("NOT SUPPORTED!!!");
+        return "accessibility";
       case "description":
         return "description";
       case "addresses":
         return "addresses";
       case "email":
         return "email";
-      case "fax":
-        throw Error("NOT SUPPORTED!!!");
-      case "phone-charge-info":
-          throw Error("NOT SUPPORTED!!!");
       case "name":
         return "name";
       case "phone":
@@ -96,7 +92,7 @@ interface PostLike {
       case "userInstruction":
         return "user-instruction";
       case "languages":
-        throw Error("NOT SUPPORTED!!!");
+        return "languages";
       case "electronicServiceChannelIds":
         return "electronic-service-list";
       case "phoneServiceChannelIds":
@@ -130,6 +126,11 @@ interface PostLike {
         if (!serviceLocationId) { 
           throw Error("Id not found!");
         }
+
+        if (componentName === "fax" || componentName === "phone-charge-info") {
+          return "";
+        }
+
         const newLocationComponentName = migrateServiceLocationComponent(componentName);
         return `<!-- wp:sptv/service-location-service-channel-block {"id":"${serviceLocationId}","component":"${newLocationComponentName}","language":"fi"} /-->`;
       case "kunta-api-service-component":
