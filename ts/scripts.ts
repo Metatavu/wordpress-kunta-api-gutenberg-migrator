@@ -61,7 +61,13 @@ interface PostLike {
 		});
   };
 
-  const migrateServiceLocationComponent = (componentName: string) => {
+  /**
+   * Resolves a service location component
+   * 
+   * @param componentName component name
+   * @returns resolved name
+   */
+  const resolveServiceLocationComponent = (componentName: string) => {
 
     switch(componentName) {
       case "accessibility":
@@ -85,7 +91,13 @@ interface PostLike {
     }
   }
 
-  const migrateServiceComponent = (componentName: string) => {
+  /**
+   * Resolves a service component
+   * 
+   * @param componentName component name
+   * @returns resolved name
+   */
+  const resolveServiceComponent = (componentName: string) => {
     switch(componentName) {
       case "description":
         return "description";
@@ -131,7 +143,7 @@ interface PostLike {
           return "";
         }
 
-        const newLocationComponentName = migrateServiceLocationComponent(componentName);
+        const newLocationComponentName = resolveServiceLocationComponent(componentName);
         return `<!-- wp:sptv/service-location-service-channel-block {"id":"${serviceLocationId}","component":"${newLocationComponentName}","language":"fi"} /-->`;
       case "kunta-api-service-component":
         const serviceIdAttr = element.attr("data-service-id");
@@ -142,7 +154,7 @@ interface PostLike {
         if (!serviceId) {
           throw Error("Id not found!");
         }
-        const newComponentName = migrateServiceComponent(componentName);
+        const newComponentName = resolveServiceComponent(componentName);
         return `<!-- wp:sptv/service-block {"id":"${serviceId}","component":"${newComponentName}","language":"fi"} /-->`;
       default:
         throw Error("NOT SUPPORTED!!!");
@@ -307,7 +319,7 @@ interface PostLike {
   };
 
   /**
-   * Scans the database for items that need to be migrated.
+   * Loads the id map
    */
   const loadIdMap = async () => {
       return new Promise((resolve, reject) => {
