@@ -201,7 +201,6 @@ interface PostLike {
   const migrateHtml = (html: string): string => {
     const rawBlocks = convertToBlocks(html);
     const migratedBlocks = migrateBlocks(rawBlocks);
-    console.log(migratedBlocks);
     return migratedBlocks;
   };
 
