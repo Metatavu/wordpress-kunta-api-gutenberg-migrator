@@ -307,7 +307,7 @@ interface PostLike {
   };
 
   /**
-   * Scans the database for items that need to be migrated.
+   * Loads the id map
    */
   const loadIdMap = async () => {
       return new Promise((resolve, reject) => {
