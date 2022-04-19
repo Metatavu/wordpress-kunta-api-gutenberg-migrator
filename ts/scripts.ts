@@ -327,11 +327,34 @@ interface PostLike {
    };
 
   /**
+   * Scans the database for items that need to be migrated.
+   */
+  const loadPostSidebar = async (postId: number) => {
+    return new Promise((resolve, reject) => {
+      const { ajaxUrl, nonce } = settings;
+
+      $.ajax({
+        method: "POST",
+        url: ajaxUrl,
+        data: { 
+          action : "kunta_api_guttenberg_migrator_load_post_sidebar",
+          post_id : postId, 
+          _wpnonce : nonce
+        }
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+ };
+
+  /**
    * Migrates single item
    * 
    * @param item item to be migrated
    */
   const migrateItem = async (item: Item) => {
+    const sidebar = await loadPostSidebar(item.id);
+
     const itemData = await getItemData(item);
     console.log({
       itemData
