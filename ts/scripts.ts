@@ -87,7 +87,7 @@ interface PostLike {
       case "webpages":
         return "webpage";
       default:
-        throw Error(componentName);
+        throw Error(`Could not resolve service location component ${componentName}`);
     }
   }
 
