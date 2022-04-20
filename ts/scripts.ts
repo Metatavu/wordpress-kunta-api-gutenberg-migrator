@@ -153,7 +153,9 @@ interface PostLike {
               "id": serviceLocationId,
               "component": newLocationComponentName,
               "language": "fi"
-          }
+          },
+          "innerBlocks": [] as any[],
+          "innerHTML": null as string | null
         }
 
       case "kunta-api-service-component":
@@ -172,7 +174,9 @@ interface PostLike {
               "id": serviceId,
               "component": newComponentName,
               "language": "fi"
-          }
+          },
+          "innerBlocks": [] as any[],
+          "innerHTML": null as string | null
         }
 
       default:
@@ -211,13 +215,7 @@ interface PostLike {
    * @returns migrated blocks
    */
   const migrateBlocks = (blocks: any[]) => {
-    blocks.map(block => {
-      if (block.name == "core/html") {
-        return migrateBlock(block);
-      } else {
-        return block;
-      }
-    });
+    return blocks.map(migrateBlock);
   };
 
   /**
