@@ -1,3 +1,5 @@
+import { parse } from '@wordpress/block-serialization-default-parser';
+
 declare const wp: any;
 declare const settings: { 
   nonce: string;
@@ -155,6 +157,7 @@ interface PostLike {
               "language": "fi"
           }
         }
+
       case "kunta-api-service-component":
         const serviceIdAttr = element.attr("data-service-id");
         if (!serviceIdAttr) {
@@ -165,9 +168,17 @@ interface PostLike {
           throw Error("Id not found!");
         }
         const newComponentName = resolveServiceComponent(componentName);
-        return `<!-- wp:sptv/service-block {"id":"${serviceId}","component":"${newComponentName}","language":"fi"} /-->`;
+        return {
+          "blockName": "sptv/service-block",
+          "attrs": {
+              "id": serviceId,
+              "component": newComponentName,
+              "language": "fi"
+          }
+        }
+        
       default:
-        return element.html();
+        return null;
     }
   }
 
@@ -183,7 +194,7 @@ interface PostLike {
     const tag = element.prop("tagName");
     switch (tag) {
       case "ARTICLE":
-        return migrateComponent(element);
+        return migrateComponent(element) || block;
       case "ASIDE":
         console.log({
           tag,
@@ -192,7 +203,7 @@ interface PostLike {
       break;
     }
 
-    return element.html();
+    return block;
   };
 
   /**
@@ -202,16 +213,13 @@ interface PostLike {
    * @returns migrated blocks
    */
   const migrateBlocks = (blocks: any[]) => {
-    let html = "";
-    blocks.forEach(block => {
+    blocks.map(block => {
       if (block.name == "core/html") {
-        html += migrateBlock(block);
+        return migrateBlock(block);
       } else {
-        html += wp.blocks.serialize(block);
+        return block;
       }
     });
-
-    return html;
   };
 
   /**
@@ -223,7 +231,7 @@ interface PostLike {
   const migrateHtml = (html: string): string => {
     const rawBlocks = convertToBlocks(html);
     const migratedBlocks = migrateBlocks(rawBlocks);
-    return migratedBlocks;
+    return wp.blocks.serialize(migratedBlocks);
   };
 
   /**
