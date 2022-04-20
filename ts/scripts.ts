@@ -55,7 +55,7 @@ interface PostLike {
    * @param html html
    * @returns Gutenberg blocks
    */
-  const convertToBlocks = (html: string) => {
+  const convertToBlocks = (html: string): any[] => {
     return wp.blocks.rawHandler({ 
 			HTML: html
 		});
@@ -211,23 +211,12 @@ interface PostLike {
   /**
    * Migrate blocks
    * 
-   * @param blocks blocks
+   * @param html html to migrate
    * @returns migrated blocks
    */
-  const migrateBlocks = (blocks: any[]) => {
+  const migrateBlocks = (html: string) => {
+    const blocks = convertToBlocks(html);
     return blocks.map(migrateBlock).filter(block => !!block);
-  };
-
-  /**
-   * Migrates html from old format to new format
-   * 
-   * @param html html to be migrated
-   * @returns migrated html
-   */
-  const migrateHtml = (html: string): string => {
-    const rawBlocks = convertToBlocks(html);
-    const migratedBlocks = migrateBlocks(rawBlocks);
-    return wp.blocks.serialize(migratedBlocks);
   };
 
   /**
@@ -379,19 +368,50 @@ interface PostLike {
    * @param item item to be migrated
    */
   const migrateItem = async (item: Item) => {
-    const sidebar = await loadPostSidebar(item.id);
-
     const itemData = await getItemData(item);
     console.log({
       itemData
     });
 
-    const migratedHtml = migrateHtml(itemData);
-    console.log({
-      migratedHtml
-    });
+    const migratedMainContent = migrateBlocks(itemData);
 
-    await updateItem(item, migratedHtml);
+    const sidebar = await loadPostSidebar(item.id);
+
+    if (sidebar) {
+      const migratedSidebar = migrateBlocks(sidebar as string);
+      const mainContentWithSidebar = {
+        "name": "core/columns",
+        "attributes": {
+        },
+        "innerBlocks": [{
+          "name": "core/column",
+          "attributes": {
+            "width": "66.66%"
+          },
+          "innerBlocks": migratedMainContent
+        },
+        {
+          "name": "core/column",
+          "attributes": {
+            "width": "33.33%"
+          },
+          "innerBlocks": migratedSidebar
+        }]
+      };
+      
+      const migratedHtml = wp.blocks.serialize(mainContentWithSidebar);
+      console.log({
+        migratedHtml: migratedHtml
+      });
+
+      await updateItem(item, migratedHtml);
+    } else {
+      const migratedHtml = wp.blocks.serialize(migratedMainContent);
+      console.log({
+        migratedHtml: migratedHtml
+      });
+      await updateItem(item, migratedHtml);
+    }
   };
 
   wp.domReady(async () => {
