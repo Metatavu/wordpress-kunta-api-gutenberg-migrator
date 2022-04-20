@@ -130,9 +130,6 @@ interface PostLike {
     const type = element.attr("data-type");
     const componentName = element.attr("data-component");
 
-    if (!componentName) {
-      throw Error("");
-    }
     switch (type) {
       case "kunta-api-service-location-component":
         const serviceLocationIdAttr = element.attr("data-service-channel-id");
@@ -170,7 +167,7 @@ interface PostLike {
         const newComponentName = resolveServiceComponent(componentName);
         return `<!-- wp:sptv/service-block {"id":"${serviceId}","component":"${newComponentName}","language":"fi"} /-->`;
       default:
-        throw Error("NOT SUPPORTED!!!");
+        return element.html();
     }
   }
 
