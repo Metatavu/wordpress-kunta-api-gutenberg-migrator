@@ -211,19 +211,7 @@ interface PostLike {
       return block;
     }
 
-    const tag = element.prop("tagName");
-    switch (tag) {
-      case "ARTICLE":
-        return migrateComponent(element, block);
-      case "ASIDE":
-        console.log({
-          tag,
-          element
-        });
-      break;
-    }
-
-    return block;
+    return migrateComponent(element, block);
   };
 
   /**
@@ -382,28 +370,6 @@ interface PostLike {
  };
 
   /**
-   * Delete post sidebar
-   * @param postId post id
-   */
-    const deletePostSidebar = async (postId: number) => {
-      return new Promise((resolve, reject) => {
-        const { ajaxUrl, nonce } = settings;
-  
-        $.ajax({
-          method: "POST",
-          url: ajaxUrl,
-          data: { 
-            action : "kunta_api_guttenberg_migrator_delete_post_sidebar",
-            post_id : postId, 
-            _wpnonce : nonce
-          }
-        })
-        .done(resolve)
-        .fail(reject);
-      });
-   };
-
-  /**
    * Migrates single item
    * 
    * @param item item to be migrated
@@ -442,17 +408,10 @@ interface PostLike {
       };
       
       const migratedHtml = wp.blocks.serialize(mainContentWithSidebar);
-      console.log({
-        migratedHtml: migratedHtml
-      });
 
       await updateItem(item, migratedHtml);
-      await deletePostSidebar(item.id);
     } else {
       const migratedHtml = wp.blocks.serialize(migratedMainContent);
-      console.log({
-        migratedHtml: migratedHtml
-      });
       await updateItem(item, migratedHtml);
     }
   };
