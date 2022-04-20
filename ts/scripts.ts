@@ -116,7 +116,7 @@ interface PostLike {
       case "webPageServiceChannelIds":
         return "webpage-service-list";
       default:
-        throw Error("NOT SUPPORTED!!!");
+        throw Error(`Could not resolve service component ${componentName}`);
     }
   }
 
