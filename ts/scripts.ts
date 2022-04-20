@@ -87,7 +87,7 @@ interface PostLike {
       case "webpages":
         return "webpage";
       default:
-        throw Error(componentName);
+        throw Error(`Could not resolve service location component ${componentName}`);
     }
   }
 
@@ -116,17 +116,20 @@ interface PostLike {
       case "webPageServiceChannelIds":
         return "webpage-service-list";
       default:
-        throw Error("NOT SUPPORTED!!!");
+        throw Error(`Could not resolve service component ${componentName}`);
     }
   }
 
-  const migrateComponent = (element: JQuery) => { 
+  /**
+   * Migrates a component
+   * 
+   * @param element element to be migrated
+   * @returns migrated component
+   */
+  const migrateComponent = (element: JQuery, block: any) => { 
     const type = element.attr("data-type");
     const componentName = element.attr("data-component");
-    element.remove();
-    if (!componentName) {
-      throw Error("");
-    }
+
     switch (type) {
       case "kunta-api-service-location-component":
         const serviceLocationIdAttr = element.attr("data-service-channel-id");
@@ -140,11 +143,21 @@ interface PostLike {
         }
 
         if (componentName === "fax" || componentName === "phone-charge-info") {
-          return "";
+          return null;
         }
 
         const newLocationComponentName = resolveServiceLocationComponent(componentName);
-        return `<!-- wp:sptv/service-location-service-channel-block {"id":"${serviceLocationId}","component":"${newLocationComponentName}","language":"fi"} /-->`;
+        return {
+          "name": "sptv/service-location-service-channel-block",
+          "attributes": {
+              "id": serviceLocationId,
+              "component": newLocationComponentName,
+              "language": "fi"
+          },
+          "innerBlocks": [] as any[],
+          "innerHTML": null as string | null
+        }
+
       case "kunta-api-service-component":
         const serviceIdAttr = element.attr("data-service-id");
         if (!serviceIdAttr) {
@@ -155,9 +168,19 @@ interface PostLike {
           throw Error("Id not found!");
         }
         const newComponentName = resolveServiceComponent(componentName);
-        return `<!-- wp:sptv/service-block {"id":"${serviceId}","component":"${newComponentName}","language":"fi"} /-->`;
+        return {
+          "name": "sptv/service-block",
+          "attributes": {
+              "id": serviceId,
+              "component": newComponentName,
+              "language": "fi"
+          },
+          "innerBlocks": [] as any[],
+          "innerHTML": null as string | null
+        }
+
       default:
-        throw Error("NOT SUPPORTED!!!");
+        return block;
     }
   }
 
@@ -173,7 +196,7 @@ interface PostLike {
     const tag = element.prop("tagName");
     switch (tag) {
       case "ARTICLE":
-        return migrateComponent(element);
+        return migrateComponent(element, block);
       case "ASIDE":
         console.log({
           tag,
@@ -182,7 +205,7 @@ interface PostLike {
       break;
     }
 
-    throw Error("Unhandled block!!!");
+    return block;
   };
 
   /**
@@ -192,16 +215,7 @@ interface PostLike {
    * @returns migrated blocks
    */
   const migrateBlocks = (blocks: any[]) => {
-    let html = "";
-    blocks.forEach(block => {
-      if (block.name == "core/html") {
-        html+= migrateBlock(block);
-      } else {
-        html +=wp.blocks.serialize(block);
-      }
-    });
-
-    return html;
+    return blocks.map(migrateBlock).filter(block => !!block);
   };
 
   /**
@@ -213,7 +227,7 @@ interface PostLike {
   const migrateHtml = (html: string): string => {
     const rawBlocks = convertToBlocks(html);
     const migratedBlocks = migrateBlocks(rawBlocks);
-    return migratedBlocks;
+    return wp.blocks.serialize(migratedBlocks);
   };
 
   /**
@@ -322,20 +336,20 @@ interface PostLike {
    * Loads the id map
    */
   const loadIdMap = async () => {
-      return new Promise((resolve, reject) => {
-        const { ajaxUrl, nonce } = settings;
-  
-        $.ajax({
-          method: "POST",
-          url: ajaxUrl,
-          data: { 
-            action : "kunta_api_guttenberg_migrator_load_id_map", 
-            _wpnonce : nonce
-          }
-        })
-        .done(resolve)
-        .fail(reject);
-      });
+    return new Promise((resolve, reject) => {
+      const { ajaxUrl, nonce } = settings;
+
+      $.ajax({
+        method: "POST",
+        url: ajaxUrl,
+        data: { 
+          action : "kunta_api_guttenberg_migrator_load_id_map", 
+          _wpnonce : nonce
+        }
+      })
+      .done(resolve)
+      .fail(reject);
+    });
    };
 
   /**
