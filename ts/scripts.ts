@@ -192,7 +192,7 @@ interface PostLike {
       break;
     }
 
-    throw Error("Unhandled block!!!");
+    return element.html();
   };
 
   /**
@@ -205,9 +205,9 @@ interface PostLike {
     let html = "";
     blocks.forEach(block => {
       if (block.name == "core/html") {
-        html+= migrateBlock(block);
+        html += migrateBlock(block);
       } else {
-        html +=wp.blocks.serialize(block);
+        html += wp.blocks.serialize(block);
       }
     });
 
