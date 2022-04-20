@@ -322,20 +322,20 @@ interface PostLike {
    * Loads the id map
    */
   const loadIdMap = async () => {
-      return new Promise((resolve, reject) => {
-        const { ajaxUrl, nonce } = settings;
-  
-        $.ajax({
-          method: "POST",
-          url: ajaxUrl,
-          data: { 
-            action : "kunta_api_guttenberg_migrator_load_id_map", 
-            _wpnonce : nonce
-          }
-        })
-        .done(resolve)
-        .fail(reject);
-      });
+    return new Promise((resolve, reject) => {
+      const { ajaxUrl, nonce } = settings;
+
+      $.ajax({
+        method: "POST",
+        url: ajaxUrl,
+        data: { 
+          action : "kunta_api_guttenberg_migrator_load_id_map", 
+          _wpnonce : nonce
+        }
+      })
+      .done(resolve)
+      .fail(reject);
+    });
    };
 
   /**
