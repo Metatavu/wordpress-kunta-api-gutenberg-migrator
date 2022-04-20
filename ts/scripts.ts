@@ -126,7 +126,7 @@ interface PostLike {
    * @param element element to be migrated
    * @returns migrated component
    */
-  const migrateComponent = (element: JQuery) => { 
+  const migrateComponent = (element: JQuery, block: any) => { 
     const type = element.attr("data-type");
     const componentName = element.attr("data-component");
 
@@ -143,13 +143,13 @@ interface PostLike {
         }
 
         if (componentName === "fax" || componentName === "phone-charge-info") {
-          return "";
+          return null;
         }
 
         const newLocationComponentName = resolveServiceLocationComponent(componentName);
         return {
           "name": "sptv/service-location-service-channel-block",
-          "attrs": {
+          "attributes": {
               "id": serviceLocationId,
               "component": newLocationComponentName,
               "language": "fi"
@@ -170,7 +170,7 @@ interface PostLike {
         const newComponentName = resolveServiceComponent(componentName);
         return {
           "name": "sptv/service-block",
-          "attrs": {
+          "attributes": {
               "id": serviceId,
               "component": newComponentName,
               "language": "fi"
@@ -180,7 +180,7 @@ interface PostLike {
         }
 
       default:
-        return null;
+        return block;
     }
   }
 
@@ -196,7 +196,7 @@ interface PostLike {
     const tag = element.prop("tagName");
     switch (tag) {
       case "ARTICLE":
-        return migrateComponent(element) || block;
+        return migrateComponent(element, block);
       case "ASIDE":
         console.log({
           tag,
@@ -215,7 +215,7 @@ interface PostLike {
    * @returns migrated blocks
    */
   const migrateBlocks = (blocks: any[]) => {
-    return blocks.map(migrateBlock);
+    return blocks.map(migrateBlock).filter(block => !!block);
   };
 
   /**
