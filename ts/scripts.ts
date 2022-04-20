@@ -148,7 +148,7 @@ interface PostLike {
 
         const newLocationComponentName = resolveServiceLocationComponent(componentName);
         return {
-          "blockName": "sptv/service-location-service-channel-block",
+          "name": "sptv/service-location-service-channel-block",
           "attrs": {
               "id": serviceLocationId,
               "component": newLocationComponentName,
@@ -169,7 +169,7 @@ interface PostLike {
         }
         const newComponentName = resolveServiceComponent(componentName);
         return {
-          "blockName": "sptv/service-block",
+          "name": "sptv/service-block",
           "attrs": {
               "id": serviceId,
               "component": newComponentName,
