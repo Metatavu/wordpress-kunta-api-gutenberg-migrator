@@ -185,13 +185,31 @@ interface PostLike {
   }
 
   /**
+   * Gets the JQUERY-element from a block
+   * 
+   * @param block block
+   * @returns block
+   */
+  const getElement = (block: any) => {
+    try {
+      return $(block.attributes.content);
+    } catch (e) {
+      return undefined;
+    }
+  }
+
+  /**
    * Migrate block 
    * 
    * @param block block
    * @returns migrated block
    */
   const migrateBlock = (block: any): any => {
-    const element = $(block.attributes.content);
+    const element = getElement(block);
+
+    if (!element) {
+      return block;
+    }
 
     const tag = element.prop("tagName");
     switch (tag) {
@@ -342,7 +360,8 @@ interface PostLike {
    };
 
   /**
-   * Scans the database for items that need to be migrated.
+   * Load post sidebar
+   * @param postId post id
    */
   const loadPostSidebar = async (postId: number) => {
     return new Promise((resolve, reject) => {
@@ -361,6 +380,28 @@ interface PostLike {
       .fail(reject);
     });
  };
+
+  /**
+   * Delete post sidebar
+   * @param postId post id
+   */
+    const deletePostSidebar = async (postId: number) => {
+      return new Promise((resolve, reject) => {
+        const { ajaxUrl, nonce } = settings;
+  
+        $.ajax({
+          method: "POST",
+          url: ajaxUrl,
+          data: { 
+            action : "kunta_api_guttenberg_migrator_delete_post_sidebar",
+            post_id : postId, 
+            _wpnonce : nonce
+          }
+        })
+        .done(resolve)
+        .fail(reject);
+      });
+   };
 
   /**
    * Migrates single item
@@ -382,6 +423,7 @@ interface PostLike {
       const mainContentWithSidebar = {
         "name": "core/columns",
         "attributes": {
+          "isStackedOnMobile": true
         },
         "innerBlocks": [{
           "name": "core/column",
@@ -405,6 +447,7 @@ interface PostLike {
       });
 
       await updateItem(item, migratedHtml);
+      await deletePostSidebar(item.id);
     } else {
       const migratedHtml = wp.blocks.serialize(migratedMainContent);
       console.log({
