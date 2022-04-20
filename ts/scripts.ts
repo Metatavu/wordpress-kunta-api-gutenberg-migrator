@@ -1,5 +1,3 @@
-import { parse } from '@wordpress/block-serialization-default-parser';
-
 declare const wp: any;
 declare const settings: { 
   nonce: string;
@@ -176,7 +174,7 @@ interface PostLike {
               "language": "fi"
           }
         }
-        
+
       default:
         return null;
     }
