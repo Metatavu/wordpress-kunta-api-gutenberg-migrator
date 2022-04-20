@@ -96,6 +96,8 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
       'orderby' => $_REQUEST['orderby'],
       'order' => $_REQUEST['order'],
       's' => $_REQUEST['s']
+			'meta_key' => 'kunta_api_guttenberg_migrator_status',
+			'meta_value' => 'not_migrated'
     ]);
 
 		$results = array();
