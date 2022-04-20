@@ -144,7 +144,14 @@ interface PostLike {
         }
 
         const newLocationComponentName = resolveServiceLocationComponent(componentName);
-        return `<!-- wp:sptv/service-location-service-channel-block {"id":"${serviceLocationId}","component":"${newLocationComponentName}","language":"fi"} /-->`;
+        return {
+          "blockName": "sptv/service-location-service-channel-block",
+          "attrs": {
+              "id": serviceLocationId,
+              "component": newLocationComponentName,
+              "language": "fi"
+          }
+        }
       case "kunta-api-service-component":
         const serviceIdAttr = element.attr("data-service-id");
         if (!serviceIdAttr) {
