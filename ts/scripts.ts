@@ -120,6 +120,12 @@ interface PostLike {
     }
   }
 
+  /**
+   * Migrates a component
+   * 
+   * @param element element to be migrated
+   * @returns migrated component
+   */
   const migrateComponent = (element: JQuery) => { 
     const type = element.attr("data-type");
     const componentName = element.attr("data-component");
