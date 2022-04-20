@@ -129,7 +129,7 @@ interface PostLike {
   const migrateComponent = (element: JQuery) => { 
     const type = element.attr("data-type");
     const componentName = element.attr("data-component");
-    element.remove();
+
     if (!componentName) {
       throw Error("");
     }
