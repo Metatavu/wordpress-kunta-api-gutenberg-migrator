@@ -32,6 +32,7 @@ interface PostLike {
 (($: JQueryStatic) => {
 
   let checkedItems: Item[] = [];
+  let ids: any = {};
 
   /**
    * Updates the checkedIds array with the ids of the checked checkboxes.
@@ -61,6 +62,129 @@ interface PostLike {
   };
 
   /**
+   * Resolves a service location component
+   * 
+   * @param componentName component name
+   * @returns resolved name
+   */
+  const resolveServiceLocationComponent = (componentName: string) => {
+
+    switch(componentName) {
+      case "accessibility":
+        return "accessibility";
+      case "description":
+        return "description";
+      case "addresses":
+        return "addresses";
+      case "email":
+        return "email";
+      case "name":
+        return "name";
+      case "phone":
+        return "phone-numbers";
+      case "servicehours":
+        return "service-hours";
+      case "webpages":
+        return "webpage";
+      default:
+        throw Error(`Could not resolve service location component ${componentName}`);
+    }
+  }
+
+  /**
+   * Resolves a service component
+   * 
+   * @param componentName component name
+   * @returns resolved name
+   */
+  const resolveServiceComponent = (componentName: string) => {
+    switch(componentName) {
+      case "description":
+        return "description";
+      case "userInstruction":
+        return "user-instruction";
+      case "languages":
+        return "languages";
+      case "electronicServiceChannelIds":
+        return "electronic-service-list";
+      case "phoneServiceChannelIds":
+        return "phone-service-list";
+      case "printableFormServiceChannelIds":
+        return "printable-form-list";
+      case "serviceLocationServiceChannelIds":
+        return "service-location-list";
+      case "webPageServiceChannelIds":
+        return "webpage-service-list";
+      default:
+        throw Error(`Could not resolve service component ${componentName}`);
+    }
+  }
+
+  /**
+   * Migrates a component
+   * 
+   * @param element element to be migrated
+   * @returns migrated component
+   */
+  const migrateComponent = (element: JQuery, block: any) => { 
+    const type = element.attr("data-type");
+    const componentName = element.attr("data-component");
+
+    switch (type) {
+      case "kunta-api-service-location-component":
+        const serviceLocationIdAttr = element.attr("data-service-channel-id");
+        if (!serviceLocationIdAttr) {
+          throw Error("Empty attribute!");
+        }
+
+        const serviceLocationId = ids[serviceLocationIdAttr];
+        if (!serviceLocationId) { 
+          throw Error("Id not found!");
+        }
+
+        if (componentName === "fax" || componentName === "phone-charge-info") {
+          return null;
+        }
+
+        const newLocationComponentName = resolveServiceLocationComponent(componentName);
+        return {
+          "name": "sptv/service-location-service-channel-block",
+          "attributes": {
+              "id": serviceLocationId,
+              "component": newLocationComponentName,
+              "language": "fi"
+          },
+          "innerBlocks": [] as any[],
+          "innerHTML": null as string | null
+        }
+
+      case "kunta-api-service-component":
+        const serviceIdAttr = element.attr("data-service-id");
+        if (!serviceIdAttr) {
+          throw Error("Empty attribute!");
+        }
+        const serviceId = ids[serviceIdAttr];
+        if (!serviceId) {
+          throw Error("Id not found!");
+        }
+        const newComponentName = resolveServiceComponent(componentName);
+        return {
+          "name": "sptv/service-block",
+          "attributes": {
+              "id": serviceId,
+              "component": newComponentName,
+              "language": "fi"
+          },
+          "innerBlocks": [] as any[],
+          "innerHTML": null as string | null
+        }
+
+      default:
+        return block;
+    }
+  }
+
+  /**
    * Migrate block 
    * 
    * @param block block
@@ -68,21 +192,11 @@ interface PostLike {
    */
   const migrateBlock = (block: any): any => {
     const element = $(block.attributes.content);
-    const tag = element.prop("tagName");
 
+    const tag = element.prop("tagName");
     switch (tag) {
       case "ARTICLE":
-        const type = element.attr("data-type");
-        const component = element.attr("data-component");
-        const serviceId = element.attr("data-service-id");
-
-        console.log({
-          tag,
-          type,
-          component,
-          serviceId
-        });
-      break;
+        return migrateComponent(element, block);
       case "ASIDE":
         console.log({
           tag,
@@ -101,13 +215,7 @@ interface PostLike {
    * @returns migrated blocks
    */
   const migrateBlocks = (blocks: any[]) => {
-    return blocks.map(block => {
-      if (block.name == "core/html") {
-        return migrateBlock(block);
-      }
-
-      return block;
-    });
+    return blocks.map(migrateBlock).filter(block => !!block);
   };
 
   /**
@@ -225,6 +333,26 @@ interface PostLike {
   };
 
   /**
+   * Loads the id map
+   */
+  const loadIdMap = async () => {
+    return new Promise((resolve, reject) => {
+      const { ajaxUrl, nonce } = settings;
+
+      $.ajax({
+        method: "POST",
+        url: ajaxUrl,
+        data: { 
+          action : "kunta_api_guttenberg_migrator_load_id_map", 
+          _wpnonce : nonce
+        }
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+   };
+
+  /**
    * Migrates single item
    * 
    * @param item item to be migrated
@@ -243,12 +371,14 @@ interface PostLike {
     await updateItem(item, migratedHtml);
   };
 
-  wp.domReady(() => {
+  wp.domReady(async () => {
     $('<div />')
       .attr('id', 'kunta-api-guttenberg-migrator-editor')
       .attr('style', 'display: block')
       .prependTo(document.body);
 
+    ids = await loadIdMap();
+    ids = JSON.parse(ids);
     wp.editPost.initializeEditor('kunta-api-guttenberg-migrator-editor', null, null, { defaultEditorStyles: [ ] }, {});
     updateSelected();
   });
