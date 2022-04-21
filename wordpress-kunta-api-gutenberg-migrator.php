@@ -54,7 +54,7 @@ add_action('plugins_loaded', function () {
     }
 
     update_post_meta($item['id'], 'kunta_api_guttenberg_migrator_status', 'migrated');
-
+    delete_post_meta($item['id'], 'kunta_api_sidebar');
     die(json_encode(["success" => $item['id']]));
   });
 
@@ -71,6 +71,12 @@ add_action('wp_ajax_kunta_api_guttenberg_migrator_load_id_map', function() {
   $myfile = fopen($file_name, "r") or die("Unable to open file!");
   die(fread($myfile,filesize($file_name)));
   fclose($myfile);
+});
+
+add_action('wp_ajax_kunta_api_guttenberg_migrator_load_post_sidebar', function() {
+  $post_id = $_POST['post_id'];
+  $post_meta = get_post_meta($post_id, 'kunta_api_sidebar', true);
+  die($post_meta);
 });
 
 /**

@@ -55,7 +55,7 @@ interface PostLike {
    * @param html html
    * @returns Gutenberg blocks
    */
-  const convertToBlocks = (html: string) => {
+  const convertToBlocks = (html: string): any[] => {
     return wp.blocks.rawHandler({ 
 			HTML: html
 		});
@@ -185,49 +185,44 @@ interface PostLike {
   }
 
   /**
+   * Gets the JQUERY-element from a block
+   * 
+   * @param block block
+   * @returns block
+   */
+  const getElement = (block: any) => {
+    try {
+      return $(block.attributes.content);
+    } catch (e) {
+      return undefined;
+    }
+  }
+
+  /**
    * Migrate block 
    * 
    * @param block block
    * @returns migrated block
    */
   const migrateBlock = (block: any): any => {
-    const element = $(block.attributes.content);
+    const element = getElement(block);
 
-    const tag = element.prop("tagName");
-    switch (tag) {
-      case "ARTICLE":
-        return migrateComponent(element, block);
-      case "ASIDE":
-        console.log({
-          tag,
-          element
-        });
-      break;
+    if (!element) {
+      return block;
     }
 
-    return block;
+    return migrateComponent(element, block);
   };
 
   /**
    * Migrate blocks
    * 
-   * @param blocks blocks
+   * @param html html to migrate
    * @returns migrated blocks
    */
-  const migrateBlocks = (blocks: any[]) => {
+  const migrateBlocks = (html: string) => {
+    const blocks = convertToBlocks(html);
     return blocks.map(migrateBlock).filter(block => !!block);
-  };
-
-  /**
-   * Migrates html from old format to new format
-   * 
-   * @param html html to be migrated
-   * @returns migrated html
-   */
-  const migrateHtml = (html: string): string => {
-    const rawBlocks = convertToBlocks(html);
-    const migratedBlocks = migrateBlocks(rawBlocks);
-    return wp.blocks.serialize(migratedBlocks);
   };
 
   /**
@@ -353,6 +348,28 @@ interface PostLike {
    };
 
   /**
+   * Load post sidebar
+   * @param postId post id
+   */
+  const loadPostSidebar = async (postId: number) => {
+    return new Promise((resolve, reject) => {
+      const { ajaxUrl, nonce } = settings;
+
+      $.ajax({
+        method: "POST",
+        url: ajaxUrl,
+        data: { 
+          action : "kunta_api_guttenberg_migrator_load_post_sidebar",
+          post_id : postId, 
+          _wpnonce : nonce
+        }
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+ };
+
+  /**
    * Migrates single item
    * 
    * @param item item to be migrated
@@ -363,12 +380,40 @@ interface PostLike {
       itemData
     });
 
-    const migratedHtml = migrateHtml(itemData);
-    console.log({
-      migratedHtml
-    });
+    const migratedMainContent = migrateBlocks(itemData);
 
-    await updateItem(item, migratedHtml);
+    const sidebar = await loadPostSidebar(item.id);
+
+    if (sidebar) {
+      const migratedSidebar = migrateBlocks(sidebar as string);
+      const mainContentWithSidebar = {
+        "name": "core/columns",
+        "attributes": {
+          "isStackedOnMobile": true
+        },
+        "innerBlocks": [{
+          "name": "core/column",
+          "attributes": {
+            "width": "66.66%"
+          },
+          "innerBlocks": migratedMainContent
+        },
+        {
+          "name": "core/column",
+          "attributes": {
+            "width": "33.33%"
+          },
+          "innerBlocks": migratedSidebar
+        }]
+      };
+      
+      const migratedHtml = wp.blocks.serialize(mainContentWithSidebar);
+
+      await updateItem(item, migratedHtml);
+    } else {
+      const migratedHtml = wp.blocks.serialize(migratedMainContent);
+      await updateItem(item, migratedHtml);
+    }
   };
 
   wp.domReady(async () => {
