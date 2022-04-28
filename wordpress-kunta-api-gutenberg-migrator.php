@@ -11,7 +11,7 @@
  */
 
 defined ( 'ABSPATH' ) || die ( 'No script kiddies please!' );
-  
+
 if (!defined('KUNTA_API_GUTENBERG_MIGRATOR_I18N_DOMAIN')) {
   define('KUNTA_API_GUTENBERG_MIGRATOR_I18N_DOMAIN', 'kunta_api_guttenberg_migrator');
 }
@@ -56,14 +56,17 @@ add_action('plugins_loaded', function () {
       die(json_encode($json));
     }
 
+    $file_name = WP_PLUGIN_DIR . "/wordpress-kunta-api-gutenberg-migrator/id.json";
+    $id_map = json_decode(file_get_contents($file_name));
+
     if (!empty($service_id)) {
       update_post_meta($item['id'], 'ptv_type', 'service');
-      update_post_meta($item['id'], 'ptv_id', $service_id);
+      update_post_meta($item['id'], 'ptv_id', $id_map->{$service_id});
     }
 
     if (!empty($service_location_id)) {
       update_post_meta($item['id'], 'ptv_type', 'service_location');
-      update_post_meta($item['id'], 'ptv_id', $service_location_id);
+      update_post_meta($item['id'], 'ptv_id', $id_map->{$service_location_id});
     }
 
     update_post_meta($item['id'], 'kunta_api_guttenberg_migrator_status', 'migrated');
