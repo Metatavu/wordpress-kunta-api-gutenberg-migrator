@@ -48,9 +48,22 @@ add_action('plugins_loaded', function () {
       'post_content' => $migrated_html,
     ];
 
+    $service_id = array_search($item['id'], get_option('kunta-api-service-pages'));
+    $service_location_id = array_search($item['id'], get_option('kunta-api-location-channel-pages'));
+
     if (!wp_update_post($post_data)) {
       $json['error'] = true;
       die(json_encode($json));
+    }
+
+    if (!empty($service_id)) {
+      update_post_meta($item['id'], 'ptv_type', 'service');
+      update_post_meta($item['id'], 'ptv_id', $service_id);
+    }
+
+    if (!empty($service_location_id)) {
+      update_post_meta($item['id'], 'ptv_type', 'service_location');
+      update_post_meta($item['id'], 'ptv_id', $service_location_id);
     }
 
     update_post_meta($item['id'], 'kunta_api_guttenberg_migrator_status', 'migrated');
