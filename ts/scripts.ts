@@ -222,7 +222,7 @@ interface PostLike {
    */
   const migrateBlocks = (html: string) => {
     const blocks = convertToBlocks(html);
-    return blocks.map(migrateBlock).filter(block => !!block);
+    return blocks.filter(block => getElement(block)?.prop('tagName') != 'ASIDE').map(migrateBlock).filter(block => !!block);
   };
 
   /**
