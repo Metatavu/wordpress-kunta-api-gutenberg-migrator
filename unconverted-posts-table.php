@@ -155,7 +155,7 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
    * @return int Number of posts per page
    */
   private function get_posts_per_page() {
-    return 50;
+    return 25;
   }
 
 }
