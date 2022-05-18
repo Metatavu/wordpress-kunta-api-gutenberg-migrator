@@ -329,9 +329,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     const migrateItem = (item) => __awaiter(this, void 0, void 0, function* () {
         try {
             const itemData = yield getItemData(item);
-            console.log({
-                itemData
-            });
             const migratedMainContent = migrateBlocks(itemData);
             const sidebar = yield loadPostSidebar(item.id);
             if (sidebar) {
