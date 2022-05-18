@@ -327,40 +327,45 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
      * @param item item to be migrated
      */
     const migrateItem = (item) => __awaiter(this, void 0, void 0, function* () {
-        const itemData = yield getItemData(item);
-        console.log({
-            itemData
-        });
-        const migratedMainContent = migrateBlocks(itemData);
-        const sidebar = yield loadPostSidebar(item.id);
-        if (sidebar) {
-            const migratedSidebar = migrateBlocks(sidebar);
-            const mainContentWithSidebar = {
-                "name": "core/columns",
-                "attributes": {
-                    "isStackedOnMobile": true
-                },
-                "innerBlocks": [{
-                        "name": "core/column",
-                        "attributes": {
-                            "width": "66.66%"
-                        },
-                        "innerBlocks": migratedMainContent
+        try {
+            const itemData = yield getItemData(item);
+            console.log({
+                itemData
+            });
+            const migratedMainContent = migrateBlocks(itemData);
+            const sidebar = yield loadPostSidebar(item.id);
+            if (sidebar) {
+                const migratedSidebar = migrateBlocks(sidebar);
+                const mainContentWithSidebar = {
+                    "name": "core/columns",
+                    "attributes": {
+                        "isStackedOnMobile": true
                     },
-                    {
-                        "name": "core/column",
-                        "attributes": {
-                            "width": "33.33%"
+                    "innerBlocks": [{
+                            "name": "core/column",
+                            "attributes": {
+                                "width": "66.66%"
+                            },
+                            "innerBlocks": migratedMainContent
                         },
-                        "innerBlocks": migratedSidebar
-                    }]
-            };
-            const migratedHtml = wp.blocks.serialize(mainContentWithSidebar);
-            yield updateItem(item, migratedHtml);
+                        {
+                            "name": "core/column",
+                            "attributes": {
+                                "width": "33.33%"
+                            },
+                            "innerBlocks": migratedSidebar
+                        }]
+                };
+                const migratedHtml = wp.blocks.serialize(mainContentWithSidebar);
+                yield updateItem(item, migratedHtml);
+            }
+            else {
+                const migratedHtml = wp.blocks.serialize(migratedMainContent);
+                yield updateItem(item, migratedHtml);
+            }
         }
-        else {
-            const migratedHtml = wp.blocks.serialize(migratedMainContent);
-            yield updateItem(item, migratedHtml);
+        catch (error) {
+            console.log(error);
         }
     });
     wp.domReady(() => __awaiter(this, void 0, void 0, function* () {
@@ -378,7 +383,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
     $('#kunta-api-guttenberg-migrator-migrate-button').on("click", () => __awaiter(this, void 0, void 0, function* () {
         console.log({ checkedItems });
-        const posts = yield Promise.all(checkedItems.map(migrateItem));
+        yield Promise.all(checkedItems.map(migrateItem));
         window.location.reload();
     }));
     $('#kunta-api-guttenberg-migrator-scan-button').on("click", () => __awaiter(this, void 0, void 0, function* () {

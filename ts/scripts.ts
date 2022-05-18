@@ -374,44 +374,48 @@ interface PostLike {
    * @param item item to be migrated
    */
   const migrateItem = async (item: Item) => {
-    const itemData = await getItemData(item);
-    console.log({
-      itemData
-    });
-
-    const migratedMainContent = migrateBlocks(itemData);
-
-    const sidebar = await loadPostSidebar(item.id);
-
-    if (sidebar) {
-      const migratedSidebar = migrateBlocks(sidebar as string);
-      const mainContentWithSidebar = {
-        "name": "core/columns",
-        "attributes": {
-          "isStackedOnMobile": true
-        },
-        "innerBlocks": [{
-          "name": "core/column",
+    try {
+      const itemData = await getItemData(item);
+      console.log({
+        itemData
+      });
+  
+      const migratedMainContent = migrateBlocks(itemData);
+  
+      const sidebar = await loadPostSidebar(item.id);
+  
+      if (sidebar) {
+        const migratedSidebar = migrateBlocks(sidebar as string);
+        const mainContentWithSidebar = {
+          "name": "core/columns",
           "attributes": {
-            "width": "66.66%"
+            "isStackedOnMobile": true
           },
-          "innerBlocks": migratedMainContent
-        },
-        {
-          "name": "core/column",
-          "attributes": {
-            "width": "33.33%"
+          "innerBlocks": [{
+            "name": "core/column",
+            "attributes": {
+              "width": "66.66%"
+            },
+            "innerBlocks": migratedMainContent
           },
-          "innerBlocks": migratedSidebar
-        }]
-      };
-      
-      const migratedHtml = wp.blocks.serialize(mainContentWithSidebar);
-
-      await updateItem(item, migratedHtml);
-    } else {
-      const migratedHtml = wp.blocks.serialize(migratedMainContent);
-      await updateItem(item, migratedHtml);
+          {
+            "name": "core/column",
+            "attributes": {
+              "width": "33.33%"
+            },
+            "innerBlocks": migratedSidebar
+          }]
+        };
+        
+        const migratedHtml = wp.blocks.serialize(mainContentWithSidebar);
+  
+        await updateItem(item, migratedHtml);
+      } else {
+        const migratedHtml = wp.blocks.serialize(migratedMainContent);
+        await updateItem(item, migratedHtml);
+      }
+    } catch (error: any) {
+      console.log(error);
     }
   };
 
@@ -433,7 +437,7 @@ interface PostLike {
 
   $('#kunta-api-guttenberg-migrator-migrate-button').on("click", async () => {
     console.log({  checkedItems });
-    const posts = await Promise.all(checkedItems.map(migrateItem));
+    await Promise.all(checkedItems.map(migrateItem));
     window.location.reload();
   });
 
