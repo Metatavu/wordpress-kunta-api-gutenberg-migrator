@@ -4,7 +4,7 @@
  * Plugin Name: Kuten API Gutenerg Migrator
  * Plugin URI: https://github.com/Metatavu/wordpress-kunta-api-gutenberg-migrator
  * Description: Convert CKEditor content to Gutenberg blocks and migrate Kunta API emdeds to SPTV blocks.
- * Version: 1.0.3
+ * Version: 1.0.6
  * Author: Metatavu Oy
  * Author URI: https://metatavu.fi
  * Text Domain: kunta_api_guttenberg_migrator
@@ -83,7 +83,7 @@ add_action('plugins_loaded', function () {
 });
 
 add_action('wp_ajax_kunta_api_guttenberg_migrator_load_id_map', function() {
-  $file_name = WP_PLUGIN_DIR . "/wordpress-kunta-api-gutenberg-migrator/id.json";
+  $file_name = plugin_dir_path( __FILE__ ) . "id.json";
   $myfile = fopen($file_name, "r") or die("Unable to open file!");
   die(fread($myfile,filesize($file_name)));
   fclose($myfile);
