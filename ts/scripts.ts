@@ -133,12 +133,12 @@ interface PostLike {
       case "kunta-api-service-location-component":
         const serviceLocationIdAttr = element.attr("data-service-channel-id");
         if (!serviceLocationIdAttr) {
-          throw Error("Empty attribute!");
+          return null;
         }
 
         const serviceLocationId = ids[serviceLocationIdAttr];
         if (!serviceLocationId) { 
-          throw Error("Id not found!");
+          return null;
         }
 
         if (componentName === "fax" || componentName === "phone-charge-info") {
@@ -160,11 +160,11 @@ interface PostLike {
       case "kunta-api-service-component":
         const serviceIdAttr = element.attr("data-service-id");
         if (!serviceIdAttr) {
-          throw Error("Empty attribute!");
+          return null;
         }
         const serviceId = ids[serviceIdAttr];
         if (!serviceId) {
-          throw Error("Id not found!");
+          return null;
         }
         const newComponentName = resolveServiceComponent(componentName);
         return {
