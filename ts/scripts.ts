@@ -376,7 +376,7 @@ interface PostLike {
   const migrateItem = async (item: Item) => {
     try {
       const itemData = await getItemData(item);
-  
+
       const migratedMainContent = migrateBlocks(itemData);
   
       const sidebar = await loadPostSidebar(item.id);
