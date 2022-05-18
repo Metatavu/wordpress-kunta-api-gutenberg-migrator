@@ -385,5 +385,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         yield scanItems();
         window.location.reload();
     }));
+    $('.kunta-api-migrate-all').on("change", (event) => __awaiter(this, void 0, void 0, function* () {
+        const value = event.target.checked;
+        $('.kunta-api-migrate').map((_index, element) => {
+            element.checked = value;
+        });
+        $('.kunta-api-migrate-all').map((_index, element) => {
+            element.checked = value;
+        });
+        updateSelected();
+    }));
 })(jQuery);
 //# sourceMappingURL=scripts.js.map

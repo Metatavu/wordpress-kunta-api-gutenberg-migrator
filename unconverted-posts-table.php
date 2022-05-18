@@ -64,7 +64,7 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
    */
   public function get_columns() {
 		return [
-			'convert' => '<input type="checkbox" />',
+			'convert' => '<input class="kunta-api-migrate-all" type="checkbox" />',
 			'title' => __( 'Title', KUNTA_API_GUTENBERG_MIGRATOR_I18N_DOMAIN ),
 			'type' => __( 'Post Type', KUNTA_API_GUTENBERG_MIGRATOR_I18N_DOMAIN )
 		];
@@ -155,7 +155,7 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
    * @return int Number of posts per page
    */
   private function get_posts_per_page() {
-    return 5;
+    return 50;
   }
 
 }

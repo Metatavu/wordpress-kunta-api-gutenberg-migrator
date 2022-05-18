@@ -30,7 +30,6 @@ interface PostLike {
  * Main function
  */
 (($: JQueryStatic) => {
-
   let checkedItems: Item[] = [];
   let ids: any = {};
 
@@ -441,6 +440,19 @@ interface PostLike {
   $('#kunta-api-guttenberg-migrator-scan-button').on("click", async () => {
     await scanItems();
     window.location.reload();
+  });
+
+  $('.kunta-api-migrate-all').on("change", async (event) => {
+    const value = (event.target as HTMLInputElement).checked;
+    $('.kunta-api-migrate').map((_index, element) => {
+      (element as HTMLInputElement).checked = value;
+    });
+
+    $('.kunta-api-migrate-all').map((_index, element) => {
+      (element as HTMLInputElement).checked = value;
+    });
+    
+    updateSelected();
   });
 
 })(jQuery);
