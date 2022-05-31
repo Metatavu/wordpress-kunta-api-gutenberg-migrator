@@ -125,20 +125,20 @@ interface PostLike {
    * @param element element to be migrated
    * @returns migrated component
    */
-  const migrateComponent = (element: JQuery, block: any) => { 
+  const migrateComponent = (element: JQuery, block: any, pageId: number) => { 
     const type = element.attr("data-type");
     const componentName = element.attr("data-component");
 
     switch (type) {
       case "kunta-api-service-location-component":
         const serviceLocationIdAttr = element.attr("data-service-channel-id");
-        if (!serviceLocationIdAttr) {
+        if (!serviceLocationIdAttr || serviceLocationIdAttr == "undefined") {
           return null;
         }
 
         const serviceLocationId = ids[serviceLocationIdAttr];
-        if (!serviceLocationId) { 
-          return null;
+        if (!serviceLocationId) {
+          throw Error(`No PTV id service channel location found for Kunta id ${serviceLocationIdAttr}, for page ${pageId}`);
         }
 
         if (componentName === "fax" || componentName === "phone-charge-info") {
@@ -159,12 +159,12 @@ interface PostLike {
 
       case "kunta-api-service-component":
         const serviceIdAttr = element.attr("data-service-id");
-        if (!serviceIdAttr) {
+        if (!serviceIdAttr || serviceIdAttr == "undefined") {
           return null;
         }
         const serviceId = ids[serviceIdAttr];
         if (!serviceId) {
-          return null;
+          throw Error(`No PTV id service found for Kunta id ${serviceIdAttr}, for page ${pageId}`);
         }
         const newComponentName = resolveServiceComponent(componentName);
         return {
@@ -201,27 +201,29 @@ interface PostLike {
    * Migrate block 
    * 
    * @param block block
+   * @param pageId page id
    * @returns migrated block
    */
-  const migrateBlock = (block: any): any => {
+  const migrateBlock = (block: any, pageId: number): any => {
     const element = getElement(block);
 
     if (!element) {
       return block;
     }
 
-    return migrateComponent(element, block);
+    return migrateComponent(element, block, pageId);
   };
 
   /**
    * Migrate blocks
    * 
    * @param html html to migrate
+   * @param pageId page id
    * @returns migrated blocks
    */
-  const migrateBlocks = (html: string) => {
+  const migrateBlocks = (html: string, pageId: number) => {
     const blocks = convertToBlocks(html);
-    return blocks.filter(block => getElement(block)?.prop('tagName') != 'ASIDE').map(migrateBlock).filter(block => !!block);
+    return blocks.filter(block => getElement(block)?.prop('tagName') != 'ASIDE').map(block => migrateBlock(block, pageId)).filter(block => !!block);
   };
 
   /**
@@ -377,12 +379,12 @@ interface PostLike {
     try {
       const itemData = await getItemData(item);
 
-      const migratedMainContent = migrateBlocks(itemData);
+      const migratedMainContent = migrateBlocks(itemData, item.id);
   
       const sidebar = await loadPostSidebar(item.id);
   
       if (sidebar) {
-        const migratedSidebar = migrateBlocks(sidebar as string);
+        const migratedSidebar = migrateBlocks(sidebar as string, item.id);
         const mainContentWithSidebar = {
           "name": "core/columns",
           "attributes": {
