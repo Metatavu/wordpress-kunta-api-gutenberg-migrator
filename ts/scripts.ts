@@ -202,6 +202,7 @@ interface PostLike {
    * Migrate block 
    * 
    * @param block block
+   * @param pageId page id
    * @returns migrated block
    */
   const migrateBlock = (block: any, pageId: number): any => {
@@ -218,6 +219,7 @@ interface PostLike {
    * Migrate blocks
    * 
    * @param html html to migrate
+   * @param pageId page id
    * @returns migrated blocks
    */
   const migrateBlocks = (html: string, pageId: number) => {
