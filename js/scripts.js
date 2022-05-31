@@ -100,18 +100,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
      * @param element element to be migrated
      * @returns migrated component
      */
-    const migrateComponent = (element, block) => {
+    const migrateComponent = (element, block, pageId) => {
         const type = element.attr("data-type");
         const componentName = element.attr("data-component");
         switch (type) {
             case "kunta-api-service-location-component":
                 const serviceLocationIdAttr = element.attr("data-service-channel-id");
-                if (!serviceLocationIdAttr) {
-                    throw Error(`No id attribute on ${element.html}`);
+                if (!serviceLocationIdAttr || serviceLocationIdAttr == "undefined") {
+                    return null;
                 }
                 const serviceLocationId = ids[serviceLocationIdAttr];
                 if (!serviceLocationId) {
-                    throw Error(`No PTV id found for Kunta id ${serviceLocationId}`);
+                    console.log(element.html());
+                    throw Error(`No PTV id service channel location found for Kunta id ${serviceLocationIdAttr}, for page ${pageId}`);
                 }
                 if (componentName === "fax" || componentName === "phone-charge-info") {
                     return null;
@@ -129,12 +130,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 };
             case "kunta-api-service-component":
                 const serviceIdAttr = element.attr("data-service-id");
-                if (!serviceIdAttr) {
-                    throw Error(`No id attribute on ${element.html}`);
+                if (!serviceIdAttr || serviceIdAttr == "undefined") {
+                    return null;
                 }
                 const serviceId = ids[serviceIdAttr];
                 if (!serviceId) {
-                    throw Error(`No PTV id found for Kunta id ${serviceId}`);
+                    throw Error(`No PTV id service found for Kunta id ${serviceIdAttr}, for page ${pageId}`);
                 }
                 const newComponentName = resolveServiceComponent(componentName);
                 return {
@@ -171,12 +172,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
      * @param block block
      * @returns migrated block
      */
-    const migrateBlock = (block) => {
+    const migrateBlock = (block, pageId) => {
         const element = getElement(block);
         if (!element) {
             return block;
         }
-        return migrateComponent(element, block);
+        return migrateComponent(element, block, pageId);
     };
     /**
      * Migrate blocks
@@ -184,9 +185,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
      * @param html html to migrate
      * @returns migrated blocks
      */
-    const migrateBlocks = (html) => {
+    const migrateBlocks = (html, pageId) => {
         const blocks = convertToBlocks(html);
-        return blocks.filter(block => { var _a; return ((_a = getElement(block)) === null || _a === void 0 ? void 0 : _a.prop('tagName')) != 'ASIDE'; }).map(migrateBlock).filter(block => !!block);
+        return blocks.filter(block => { var _a; return ((_a = getElement(block)) === null || _a === void 0 ? void 0 : _a.prop('tagName')) != 'ASIDE'; }).map(block => migrateBlock(block, pageId)).filter(block => !!block);
     };
     /**
      * Downloads page from Wordpress API
@@ -329,10 +330,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     const migrateItem = (item) => __awaiter(this, void 0, void 0, function* () {
         try {
             const itemData = yield getItemData(item);
-            const migratedMainContent = migrateBlocks(itemData);
+            const migratedMainContent = migrateBlocks(itemData, item.id);
             const sidebar = yield loadPostSidebar(item.id);
             if (sidebar) {
-                const migratedSidebar = migrateBlocks(sidebar);
+                const migratedSidebar = migrateBlocks(sidebar, item.id);
                 const mainContentWithSidebar = {
                     "name": "core/columns",
                     "attributes": {
