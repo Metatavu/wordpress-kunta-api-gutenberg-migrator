@@ -138,7 +138,6 @@ interface PostLike {
 
         const serviceLocationId = ids[serviceLocationIdAttr];
         if (!serviceLocationId) {
-          console.log(element.html());
           throw Error(`No PTV id service channel location found for Kunta id ${serviceLocationIdAttr}, for page ${pageId}`);
         }
 
