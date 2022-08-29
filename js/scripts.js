@@ -111,7 +111,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 }
                 const serviceLocationId = ids[serviceLocationIdAttr];
                 if (!serviceLocationId) {
-                    console.log(element.html());
                     throw Error(`No PTV id service channel location found for Kunta id ${serviceLocationIdAttr}, for page ${pageId}`);
                 }
                 if (componentName === "fax" || componentName === "phone-charge-info") {
@@ -170,6 +169,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
      * Migrate block
      *
      * @param block block
+     * @param pageId page id
      * @returns migrated block
      */
     const migrateBlock = (block, pageId) => {
@@ -183,6 +183,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
      * Migrate blocks
      *
      * @param html html to migrate
+     * @param pageId page id
      * @returns migrated blocks
      */
     const migrateBlocks = (html, pageId) => {
@@ -331,6 +332,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         try {
             const itemData = yield getItemData(item);
             const migratedMainContent = migrateBlocks(itemData, item.id);
+            const featuredImage = {
+                "name": "core/post-featured-image"
+            };
             const sidebar = yield loadPostSidebar(item.id);
             if (sidebar) {
                 const migratedSidebar = migrateBlocks(sidebar, item.id);
@@ -344,7 +348,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                             "attributes": {
                                 "width": "66.66%"
                             },
-                            "innerBlocks": migratedMainContent
+                            "innerBlocks": [featuredImage, ...migratedMainContent]
                         },
                         {
                             "name": "core/column",
@@ -358,7 +362,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 yield updateItem(item, migratedHtml);
             }
             else {
-                const migratedHtml = wp.blocks.serialize(migratedMainContent);
+                const migratedHtml = wp.blocks.serialize([featuredImage, ...migratedMainContent]);
                 yield updateItem(item, migratedHtml);
             }
         }

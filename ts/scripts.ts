@@ -380,7 +380,10 @@ interface PostLike {
       const itemData = await getItemData(item);
 
       const migratedMainContent = migrateBlocks(itemData, item.id);
-  
+      const featuredImage = {
+        "name": "core/post-featured-image"
+      };
+
       const sidebar = await loadPostSidebar(item.id);
   
       if (sidebar) {
@@ -395,7 +398,7 @@ interface PostLike {
             "attributes": {
               "width": "66.66%"
             },
-            "innerBlocks": migratedMainContent
+            "innerBlocks": [ featuredImage, ... migratedMainContent ]
           },
           {
             "name": "core/column",
@@ -410,7 +413,7 @@ interface PostLike {
   
         await updateItem(item, migratedHtml);
       } else {
-        const migratedHtml = wp.blocks.serialize(migratedMainContent);
+        const migratedHtml = wp.blocks.serialize([ featuredImage, ... migratedMainContent ]);
         await updateItem(item, migratedHtml);
       }
     } catch (error: any) {
