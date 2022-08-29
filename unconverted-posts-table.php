@@ -88,17 +88,29 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
    * @return array posts
    */
 	public function get_posts($page_number) {
-    $posts_array = get_posts([
+    $options = [
       'post_type' => 'page', // TODO: add support for other post types
       'post_status' => 'any',
       'posts_per_page' => $this->get_posts_per_page(),
       'paged' => $page_number,
-      'orderby' => $_REQUEST['orderby'],
-      'order' => $_REQUEST['order'],
-      's' => $_REQUEST['s'],
 			'meta_key' => 'kunta_api_guttenberg_migrator_status',
 			'meta_value' => 'not_migrated'
-    ]);
+    ];
+
+    if (isset($_REQUEST['s'])) {
+      $options["s"] = $_REQUEST['s'];
+    }
+
+    if (isset($_REQUEST['order'])) {
+      $options["order"] = $_REQUEST['order'];
+    }
+
+    if (isset($_REQUEST['orderby'])) {
+      $options["orderby"] = $_REQUEST['orderby'];
+    }
+
+
+    $posts_array = get_posts($options);
 
 		$results = array();
 		foreach ( $posts_array as $post ) {
@@ -118,14 +130,19 @@ class KuntaApiMigratorUnconvertedPostsTable extends WP_List_Table {
    * @return int Post count
    */
 	public function count_items() {
-		$posts_query = new WP_Query([
+    $options = [
       'post_type' => 'page', // TODO: add support for other post types
       'post_status' => 'any',
       'posts_per_page' => -1,
-      's' => $_REQUEST['s'],
 			'meta_key' => 'kunta_api_guttenberg_migrator_status',
 			'meta_value' => 'not_migrated'
-    ]);
+    ];
+
+    if (isset($_REQUEST['s'])) {
+      $options["s"] = $_REQUEST['s'];
+    }
+
+		$posts_query = new WP_Query($options);
 
 		return $posts_query->post_count;
 	}
