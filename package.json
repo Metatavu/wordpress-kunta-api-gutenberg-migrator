@@ -1,0 +1,24 @@
+{
+  "name": "wordpress-kunta-api-gutenberg-migrator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Metatavu/wordpress-kunta-api-gutenberg-migrator.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Metatavu/wordpress-kunta-api-gutenberg-migrator/issues"
+  },
+  "homepage": "https://github.com/Metatavu/wordpress-kunta-api-gutenberg-migrator#readme",
+  "devDependencies": {
+    "@types/jquery": "^3.5.14",
+    "typescript": "^4.6.3"
+  }
+}
