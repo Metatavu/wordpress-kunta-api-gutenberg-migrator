@@ -380,8 +380,11 @@ interface PostLike {
       const itemData = await getItemData(item);
 
       const migratedMainContent = migrateBlocks(itemData, item.id);
+      
       const featuredImage = {
-        "name": "core/post-featured-image"
+        "name": "core/post-featured-image",
+        "attributes": { },
+        "innerBlocks": [ ] as any[]
       };
 
       const sidebar = await loadPostSidebar(item.id);
@@ -438,7 +441,7 @@ interface PostLike {
   });
 
   $('#kunta-api-guttenberg-migrator-migrate-button').on("click", async () => {
-    console.log({  checkedItems });
+    $('#kunta-api-guttenberg-migrator-migrate-button').attr("disabled", "disabled");
     await Promise.all(checkedItems.map(migrateItem));
     window.location.reload();
   });

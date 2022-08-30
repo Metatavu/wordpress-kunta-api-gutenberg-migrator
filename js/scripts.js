@@ -333,7 +333,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             const itemData = yield getItemData(item);
             const migratedMainContent = migrateBlocks(itemData, item.id);
             const featuredImage = {
-                "name": "core/post-featured-image"
+                "name": "core/post-featured-image",
+                "attributes": {},
+                "innerBlocks": []
             };
             const sidebar = yield loadPostSidebar(item.id);
             if (sidebar) {
@@ -384,7 +386,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         updateSelected();
     });
     $('#kunta-api-guttenberg-migrator-migrate-button').on("click", () => __awaiter(this, void 0, void 0, function* () {
-        console.log({ checkedItems });
+        $('#kunta-api-guttenberg-migrator-migrate-button').attr("disabled", "disabled");
         yield Promise.all(checkedItems.map(migrateItem));
         window.location.reload();
     }));
