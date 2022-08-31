@@ -7,6 +7,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+const { registerBlockType } = wp.blocks;
+/**
+ * Registers newsblock Gutenberg block
+ */
+const registerNewsBlock = () => {
+    registerBlockType('acf/newsblock', {
+        category: 'acf',
+        title: "title",
+        attributes: {
+            data: {
+                type: "object"
+            }
+        }
+    });
+};
 /**
  * Main function
  */
@@ -166,19 +181,122 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
     };
     /**
+     * Migrates newslist shortcode
+     *
+     * @param block block
+     * @param parsedShortcode parsed shortcode
+     * @returns migrated block
+     */
+    const migrateNewsListShortcode = (parsedShortcode) => __awaiter(this, void 0, void 0, function* () {
+        const tag = parsedShortcode.attrs.tag;
+        const categoryId = yield findCategoryId(tag);
+        if (!categoryId) {
+            throw new Error(`Could not find new list categry ${tag}`);
+        }
+        const data = {
+            tag: categoryId,
+            _tag: settings.newsAcfField
+        };
+        return {
+            "name": "acf/newsblock",
+            "attributes": {
+                data: data,
+                align: "",
+                mode: "auto"
+            },
+            "innerBlocks": []
+        };
+    });
+    /**
+     * Decodes html encoded text
+     *
+     * @param html html encoded text
+     * @returns decoded text
+     */
+    const decodeHtmlEntities = (html) => {
+        const txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
+    };
+    /**
+     * Parses shortcode attributes
+     *
+     * @param text attrbutes text
+     * @returns parsed shortcode attributes
+     */
+    const parseShortcodeAttributes = (text) => {
+        const result = {};
+        if (!text) {
+            return result;
+        }
+        let textLeft = text;
+        let match = null;
+        match = textLeft.match(/([a-z]{1,})=\"(.*?)\"/);
+        while (match && match.length === 3) {
+            const [matchText, name, value] = match;
+            result[name] = decodeHtmlEntities(value);
+            textLeft = textLeft.substring(matchText.length);
+            match = textLeft.match(/([a-z]{1,})=\"(.*?)\"/);
+        }
+        return result;
+    };
+    /**
+     * Parses shortcode from text representation
+     *
+     * @param text shortcode text representation
+     * @returns parsed shortcode
+     */
+    const parseShortcodeText = (text) => {
+        const result = text.match(/\[([a-z_]{1,})(.*)\]/);
+        if (!result) {
+            throw Error(`Could not parse shortcode ${text}`);
+        }
+        const name = result[1];
+        const attrs = parseShortcodeAttributes(result[2]);
+        return {
+            name: name,
+            attrs: attrs
+        };
+    };
+    /**
+     * Migrates a shortcode
+     *
+     * @param block
+     * @returns
+     */
+    const migrateShortcode = (block) => __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        const shortcodeText = (_a = block === null || block === void 0 ? void 0 : block.attributes) === null || _a === void 0 ? void 0 : _a.text;
+        if (!shortcodeText) {
+            return block;
+        }
+        const parsedShortcode = parseShortcodeText(shortcodeText);
+        if (!parsedShortcode) {
+            return block;
+        }
+        switch (parsedShortcode.name) {
+            case "kunta_api_news_list":
+                return yield migrateNewsListShortcode(parsedShortcode);
+        }
+        return block;
+    });
+    /**
      * Migrate block
      *
      * @param block block
      * @param pageId page id
      * @returns migrated block
      */
-    const migrateBlock = (block, pageId) => {
+    const migrateBlock = (block, pageId) => __awaiter(this, void 0, void 0, function* () {
+        if (block.name === "core/shortcode") {
+            return yield migrateShortcode(block);
+        }
         const element = getElement(block);
         if (!element) {
             return block;
         }
         return migrateComponent(element, block, pageId);
-    };
+    });
     /**
      * Migrate blocks
      *
@@ -186,10 +304,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
      * @param pageId page id
      * @returns migrated blocks
      */
-    const migrateBlocks = (html, pageId) => {
+    const migrateBlocks = (html, pageId) => __awaiter(this, void 0, void 0, function* () {
         const blocks = convertToBlocks(html);
-        return blocks.filter(block => { var _a; return ((_a = getElement(block)) === null || _a === void 0 ? void 0 : _a.prop('tagName')) != 'ASIDE'; }).map(block => migrateBlock(block, pageId)).filter(block => !!block);
-    };
+        const migratedBlocks = yield Promise.all(blocks.filter(block => { var _a; return ((_a = getElement(block)) === null || _a === void 0 ? void 0 : _a.prop('tagName')) != 'ASIDE'; }).map(block => migrateBlock(block, pageId)));
+        return migratedBlocks.filter(block => !!block);
+    });
     /**
      * Downloads page from Wordpress API
      *
@@ -208,6 +327,38 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 .done(resolve)
                 .fail(reject);
         });
+    });
+    /**
+     * Searches categories by name
+     *
+     * @param name category name
+     * @returns found categories
+     */
+    const searchCategories = (name) => {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                method: "GET",
+                beforeSend: (xhr) => {
+                    xhr.setRequestHeader('X-WP-Nonce', settings.nonce);
+                },
+                url: `/wp-json/wp/v2/categories?search=${name}`
+            })
+                .done(resolve)
+                .fail(reject);
+        });
+    };
+    /**
+     * Finds category id for categry name
+     *
+     * @param name category name
+     * @returns found category id or null if not found
+     */
+    const findCategoryId = (name) => __awaiter(this, void 0, void 0, function* () {
+        var _b;
+        const categories = yield searchCategories(name);
+        return (_b = categories.find(category => {
+            return category.name === name;
+        })) === null || _b === void 0 ? void 0 : _b.id;
     });
     /**
      * Downloads post from Wordpress API
@@ -331,7 +482,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     const migrateItem = (item) => __awaiter(this, void 0, void 0, function* () {
         try {
             const itemData = yield getItemData(item);
-            const migratedMainContent = migrateBlocks(itemData, item.id);
+            const migratedMainContent = yield migrateBlocks(itemData, item.id);
             const featuredImage = {
                 "name": "core/post-featured-image",
                 "attributes": {},
@@ -339,7 +490,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             };
             const sidebar = yield loadPostSidebar(item.id);
             if (sidebar) {
-                const migratedSidebar = migrateBlocks(sidebar, item.id);
+                const migratedSidebar = yield migrateBlocks(sidebar, item.id);
                 const mainContentWithSidebar = {
                     "name": "core/columns",
                     "attributes": {
@@ -386,6 +537,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         updateSelected();
     });
     $('#kunta-api-guttenberg-migrator-migrate-button').on("click", () => __awaiter(this, void 0, void 0, function* () {
+        registerNewsBlock();
         $('#kunta-api-guttenberg-migrator-migrate-button').attr("disabled", "disabled");
         yield Promise.all(checkedItems.map(migrateItem));
         window.location.reload();
