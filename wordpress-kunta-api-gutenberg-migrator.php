@@ -4,7 +4,7 @@
  * Plugin Name: Kuten API Gutenerg Migrator
  * Plugin URI: https://github.com/Metatavu/wordpress-kunta-api-gutenberg-migrator
  * Description: Convert CKEditor content to Gutenberg blocks and migrate Kunta API emdeds to SPTV blocks.
- * Version: 1.1.9
+ * Version: 1.2.0
  * Author: Metatavu Oy
  * Author URI: https://metatavu.fi
  * Text Domain: kunta_api_guttenberg_migrator
@@ -40,6 +40,7 @@ add_action('plugins_loaded', function () {
   });
 
 	add_action('wp_ajax_kunta_api_guttenberg_migrator_migrate_item', function () {
+
     $item = json_decode(stripslashes($_POST['item']), true);
     $migrated_html = $_POST['migratedHtml'];
 
@@ -74,11 +75,19 @@ add_action('plugins_loaded', function () {
     die(json_encode(["success" => $item['id']]));
   });
 
-  wp_register_script('kunta-api-guttenberg-migrator-script', plugin_dir_url( __FILE__ ) . 'js/scripts.js', [ 'jquery', 'wp-blocks', 'wp-edit-post', 'wp-api', 'sptv-blocks' ], false, true);
-  wp_localize_script('kunta-api-guttenberg-migrator-script', 'settings', [
+  $newsAcfFields = $GLOBALS['wpdb']->get_results( "select post_name from wp_posts where post_excerpt='tag' and post_type='acf-field'", OBJECT);
+  $scriptOptions = [
     'nonce' => wp_create_nonce( 'wp_rest' ),
 		'ajaxUrl' => admin_url( 'admin-ajax.php' )
-  ]);
+  ];
+
+  if (sizeof($newsAcfFields) == 1) {
+    $scriptOptions['newsAcfField'] = $newsAcfFields[0]->post_name;
+  }
+
+  wp_register_script('kunta-api-guttenberg-migrator-script', plugin_dir_url( __FILE__ ) . 'js/scripts.js', [ 'jquery', 'wp-blocks', 'wp-edit-post', 'wp-api', 'sptv-blocks' ], false, true);
+  wp_localize_script('kunta-api-guttenberg-migrator-script', 'settings', $scriptOptions);
+
 	wp_enqueue_script('kunta-api-guttenberg-migrator-script');
 });
 

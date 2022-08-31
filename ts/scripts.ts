@@ -1,7 +1,26 @@
 declare const wp: any;
+
+const { registerBlockType } = wp.blocks;
+
 declare const settings: { 
   nonce: string;
   ajaxUrl: string;
+  newsAcfField: string;
+};
+
+/**
+ * Registers newsblock Gutenberg block
+ */
+const registerNewsBlock = () => {
+  registerBlockType('acf/newsblock', {
+    category: 'acf',
+    title: "title",
+    attributes: {
+      data: {
+        type: "object"
+      }
+    }
+  });
 };
 
 /**
@@ -24,6 +43,14 @@ interface PostLike {
   content: {
     raw: string;
   };
+}
+
+/**
+ * Interface for parsed shortcode
+ */
+interface ParsedShortcode {
+  name: string;
+  attrs: { [key: string]: string };
 }
 
 /**
@@ -198,13 +225,132 @@ interface PostLike {
   }
 
   /**
+   * Migrates newslist shortcode
+   * 
+   * @param block block
+   * @param parsedShortcode parsed shortcode 
+   * @returns migrated block
+   */
+  const migrateNewsListShortcode = async (parsedShortcode: ParsedShortcode ) => {
+    const tag = parsedShortcode.attrs.tag;
+    const categoryId = await findCategoryId(tag);
+    if (!categoryId) {
+      throw new Error(`Could not find new list categry ${tag}`);
+    }
+
+    const data: { [key: string]: any } = {
+      tag: categoryId,
+      _tag: settings.newsAcfField
+    };
+  
+    return {
+      "name": "acf/newsblock",
+      "attributes": {
+        data: data,
+        align: "",
+        mode: "auto"
+      },
+      "innerBlocks": [] as any[]
+    };
+  };
+
+  /**
+   * Decodes html encoded text
+   * 
+   * @param html html encoded text
+   * @returns decoded text
+   */
+  const decodeHtmlEntities = (html: string): string => {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+  }
+  
+  /**
+   * Parses shortcode attributes
+   * 
+   * @param text attrbutes text
+   * @returns parsed shortcode attributes 
+   */
+  const parseShortcodeAttributes = (text: string): { [key: string ]: string } => {
+    const result: { [key: string ]: string } = {};
+    if (!text) {
+      return result;
+    }
+
+    let textLeft = text;
+    let match = null;
+
+    match = textLeft.match(/([a-z]{1,})=\"(.*?)\"/);
+    while (match && match.length === 3) {
+      const [ matchText, name, value ] = match;
+      result[name] = decodeHtmlEntities(value);
+
+      textLeft = textLeft.substring(matchText.length);
+      match = textLeft.match(/([a-z]{1,})=\"(.*?)\"/)
+    }
+
+    return result;
+  }
+
+  /**
+   * Parses shortcode from text representation
+   * 
+   * @param text shortcode text representation
+   * @returns parsed shortcode
+   */
+  const parseShortcodeText = (text: string): ParsedShortcode | null => {
+    const result = text.match(/\[([a-z_]{1,})(.*)\]/);
+    if (!result) {
+      throw Error(`Could not parse shortcode ${text}`);
+    }
+
+    const name = result[1];
+    const attrs: { [key: string]: string } = parseShortcodeAttributes(result[2]);
+    
+    return {
+      name: name,
+      attrs: attrs
+    };
+  };
+
+  /**
+   * Migrates a shortcode
+   * 
+   * @param block 
+   * @returns 
+   */
+  const migrateShortcode = async (block: any) => {
+    const shortcodeText = block?.attributes?.text;
+    if (!shortcodeText) {
+      return block;
+    }
+
+    const parsedShortcode = parseShortcodeText(shortcodeText);
+    if (!parsedShortcode) {
+      return block;
+    }
+
+    switch (parsedShortcode.name) {
+      case "kunta_api_news_list":
+        return await migrateNewsListShortcode(parsedShortcode);
+    }
+
+    return block;
+  };
+
+  /**
    * Migrate block 
    * 
    * @param block block
    * @param pageId page id
    * @returns migrated block
    */
-  const migrateBlock = (block: any, pageId: number): any => {
+  const migrateBlock = async (block: any, pageId: number): Promise<any> => {
+    if (block.name === "core/shortcode") {
+      return await migrateShortcode(block);
+    }
+
     const element = getElement(block);
 
     if (!element) {
@@ -221,9 +367,10 @@ interface PostLike {
    * @param pageId page id
    * @returns migrated blocks
    */
-  const migrateBlocks = (html: string, pageId: number) => {
+  const migrateBlocks = async (html: string, pageId: number) => {
     const blocks = convertToBlocks(html);
-    return blocks.filter(block => getElement(block)?.prop('tagName') != 'ASIDE').map(block => migrateBlock(block, pageId)).filter(block => !!block);
+    const migratedBlocks = await Promise.all(blocks.filter(block => getElement(block)?.prop('tagName') != 'ASIDE').map(block => migrateBlock(block, pageId)));
+    return migratedBlocks.filter(block => !!block);
   };
 
   /**
@@ -246,6 +393,39 @@ interface PostLike {
     });
   };
 
+  /**
+   * Searches categories by name
+   * 
+   * @param name category name
+   * @returns found categories
+   */
+  const searchCategories = (name: string): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+      $.ajax({
+        method: "GET",
+        beforeSend: ( xhr ) => {
+          xhr.setRequestHeader('X-WP-Nonce', settings.nonce);
+        },
+        url: `/wp-json/wp/v2/categories?search=${name}`
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+  }
+
+  /**
+   * Finds category id for categry name
+   * 
+   * @param name category name
+   * @returns found category id or null if not found
+   */
+  const findCategoryId = async (name: string) => {
+    const categories = await searchCategories(name);
+    return categories.find(category => {
+      return category.name === name;
+    })?.id;
+  }
+  
   /**
    * Downloads post from Wordpress API
    * 
@@ -378,8 +558,7 @@ interface PostLike {
   const migrateItem = async (item: Item) => {
     try {
       const itemData = await getItemData(item);
-
-      const migratedMainContent = migrateBlocks(itemData, item.id);
+      const migratedMainContent = await migrateBlocks(itemData, item.id);
       
       const featuredImage = {
         "name": "core/post-featured-image",
@@ -390,7 +569,7 @@ interface PostLike {
       const sidebar = await loadPostSidebar(item.id);
   
       if (sidebar) {
-        const migratedSidebar = migrateBlocks(sidebar as string, item.id);
+        const migratedSidebar = await migrateBlocks(sidebar as string, item.id);
         const mainContentWithSidebar = {
           "name": "core/columns",
           "attributes": {
@@ -441,6 +620,7 @@ interface PostLike {
   });
 
   $('#kunta-api-guttenberg-migrator-migrate-button').on("click", async () => {
+    registerNewsBlock();
     $('#kunta-api-guttenberg-migrator-migrate-button').attr("disabled", "disabled");
     await Promise.all(checkedItems.map(migrateItem));
     window.location.reload();
