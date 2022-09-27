@@ -565,6 +565,14 @@ interface ParsedShortcode {
         "attributes": { },
         "innerBlocks": [ ] as any[]
       };
+      
+      const postTitle = {
+        "name": "core/post-title",
+        "attributes": { 
+          level: 1
+        },
+        "innerBlocks": [ ] as any[]
+      };
 
       const sidebar = await loadPostSidebar(item.id);
   
@@ -580,7 +588,7 @@ interface ParsedShortcode {
             "attributes": {
               "width": "66.66%"
             },
-            "innerBlocks": [ featuredImage, ... migratedMainContent ]
+            "innerBlocks": [ postTitle, featuredImage, ... migratedMainContent ]
           },
           {
             "name": "core/column",

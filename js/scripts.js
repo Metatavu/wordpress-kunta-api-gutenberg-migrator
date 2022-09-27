@@ -488,6 +488,13 @@ const registerNewsBlock = () => {
                 "attributes": {},
                 "innerBlocks": []
             };
+            const postTitle = {
+                "name": "core/post-title",
+                "attributes": {
+                    level: 1
+                },
+                "innerBlocks": []
+            };
             const sidebar = yield loadPostSidebar(item.id);
             if (sidebar) {
                 const migratedSidebar = yield migrateBlocks(sidebar, item.id);
@@ -501,7 +508,7 @@ const registerNewsBlock = () => {
                             "attributes": {
                                 "width": "66.66%"
                             },
-                            "innerBlocks": [featuredImage, ...migratedMainContent]
+                            "innerBlocks": [postTitle, featuredImage, ...migratedMainContent]
                         },
                         {
                             "name": "core/column",
